@@ -28,7 +28,7 @@ jobs:
         id: branch
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            echo "branch_prefix=prod" >> $GITHUB_ENV
+            echo "branch_prefix=main" >> $GITHUB_ENV
           else
             branch="${GITHUB_REF_NAME#dev-}"
             echo "branch_prefix=${branch}" >> $GITHUB_ENV
