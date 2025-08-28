@@ -32,6 +32,7 @@ jobs:
           else
             branch="${GITHUB_REF_NAME#dev-}"
             echo "branch_prefix=${branch}" >> $GITHUB_ENV
+          fi
 
       # 4️⃣ Deploy each Python file in lambdas/ as a separate Lambda
       - name: Deploy Lambdas
