@@ -1,9 +1,9 @@
-name: Deploy Lambda per Dev
+name: Deploy Hello World Lambda Per Dev
 
 on:
   push:
     branches:
-      - dev-*   # any branch starting with dev-
+      - dev-*  # any developer branch
       - main
 
 jobs:
@@ -11,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
+      # 1️⃣ Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Zip Lambda package
+      # 2️⃣ Zip Lambda package
       - name: Zip Lambda package
-        run: zip -r function.zip .
+        run: zip -r function.zip lambda_function.py
 
-      # Configure AWS credentials
+      # 3️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -27,17 +27,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Determine Lambda function name
+      # 4️⃣ Determine Lambda function name
       - name: Set Lambda Function Name
         id: vars
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            echo "lambda_name=ProjectProd-lambda" >> $GITHUB_ENV
+            echo "lambda_name=HelloWorld-prod" >> $GITHUB_ENV
           else
-            branch="${GITHUB_REF_NAME#dev-}"  # strip "dev-" prefix
-            echo "lambda_name=ProjectDev-${branch}-lambda" >> $GITHUB_ENV
+            branch="${GITHUB_REF_NAME#dev-}"  # remove dev- prefix
+            echo "lambda_name=HelloWorld-${branch}" >> $GITHUB_ENV
 
-      # Check if Lambda exists
+      # 5️⃣ Check if Lambda exists
       - name: Check if Lambda exists
         id: check_lambda
         run: |
@@ -45,19 +45,19 @@ jobs:
           aws lambda get-function --function-name ${{ env.lambda_name }}
           echo "exists=$?" >> $GITHUB_OUTPUT
 
-      # Create Lambda if it doesn’t exist
+      # 6️⃣ Create Lambda if it doesn’t exist
       - name: Create Lambda if needed
         if: steps.check_lambda.outputs.exists != '0'
         run: |
-          echo "Lambda function ${{ env.lambda_name }} not found. Creating..."
+          echo "Lambda ${{ env.lambda_name }} not found. Creating..."
           aws lambda create-function \
             --function-name ${{ env.lambda_name }} \
             --runtime python3.11 \
-            --role arn:aws:iam::123456789012:role/ProjectDev-${{ github.ref_name#dev- }}-role \
+            --role arn:aws:iam::123456789012:role/<your-lambda-execution-role> \
             --handler lambda_function.lambda_handler \
             --zip-file fileb://function.zip
 
-      # Deploy code to Lambda
+      # 7️⃣ Deploy code to Lambda
       - name: Deploy to Lambda
         run: |
           echo "Deploying code to ${{ env.lambda_name }}"
