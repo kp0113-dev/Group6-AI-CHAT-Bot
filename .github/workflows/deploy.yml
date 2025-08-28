@@ -1,0 +1,40 @@
+name: Deploy Lambda
+
+on:
+  push:
+    branches:
+      - dev-*   # any branch starting with dev-
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Zip Lambda package
+        run: zip -r function.zip .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set Lambda Function Name
+        id: vars
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "lambda_name=ProjectProd-lambda" >> $GITHUB_ENV
+          else
+            branch="${GITHUB_REF_NAME#dev-}" # strip "dev-"
+            echo "lambda_name=ProjectDev-${branch}-lambda" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.lambda_name }} \
+            --zip-file fileb://function.zip
