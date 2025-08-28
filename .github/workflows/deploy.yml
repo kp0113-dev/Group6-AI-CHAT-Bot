@@ -44,7 +44,7 @@ jobs:
             # Extract base name and create Lambda name
             base_name="${file##*/}"        # strip folder path
             base_name="${base_name%.py}"   # remove .py
-            lambda_name="${base_name}-${{ env.branch_prefix }}"
+            lambda_name="${base_name}"
 
             echo "Deploying Lambda function: $lambda_name"
 
