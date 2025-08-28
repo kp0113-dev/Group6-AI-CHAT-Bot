@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout code
+      # 1️⃣ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       # 2️⃣ Configure AWS credentials
@@ -32,7 +32,6 @@ jobs:
           else
             branch="${GITHUB_REF_NAME#dev-}"
             echo "branch_prefix=${branch}" >> $GITHUB_ENV
-          fi
 
       # 4️⃣ Deploy each Python file in lambdas/ as a separate Lambda
       - name: Deploy Lambdas
@@ -41,15 +40,16 @@ jobs:
             # Skip non-Python files just in case
             [[ "$file" != *.py ]] && continue
 
+            # Extract base name and create Lambda name
             base_name="${file##*/}"        # strip folder path
             base_name="${base_name%.py}"   # remove .py
             lambda_name="${base_name}-${{ env.branch_prefix }}"
 
             echo "Deploying Lambda function: $lambda_name"
 
-            # Zip the Lambda file
+            # Zip the file (flatten folder structure with -j)
             zip_file="${base_name}.zip"
-            zip -r "$zip_file" "$file"
+            zip -j "$zip_file" "$file"
 
             # Check if Lambda exists
             aws lambda get-function --function-name "$lambda_name" >/dev/null 2>&1
@@ -58,7 +58,7 @@ jobs:
               aws lambda create-function \
                 --function-name "$lambda_name" \
                 --runtime python3.11 \
-                --arn:aws:iam::264483381689:role/github-lambdas \
+                --arn:aws:iam::264483381689:role/github-lambdasn> \
                 --handler "${base_name}.lambda_handler" \
                 --zip-file "fileb://$zip_file"
             fi
