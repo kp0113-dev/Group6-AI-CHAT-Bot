@@ -21,7 +21,7 @@ jobs:
 
       - name: Deploy Lambdas
         run: |
-          ROLE_ARN="arn:aws:iam::123456789012:role/MyLambdaExecutionRole" # 🔑 replace with your Lambda execution role ARN
+          ROLE_ARN="arn:aws:iam::264483381689:role/github-lambdas" # 🔑 replace with your Lambda execution role ARN
 
           for file in lambdas/*.py; do
             # Skip non-Python files just in case
