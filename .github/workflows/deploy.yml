@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - main
-
+      - dev-*   # any branch starting with dev-
+      
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,25 +20,31 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Set branch prefix
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "branch_suffix=prod" >> $GITHUB_ENV
+          else
+            branch="${GITHUB_REF_NAME#dev-}" # strip "dev-"
+            echo "branch_suffix=dev-${branch}" >> $GITHUB_ENV
+          fi
+
       - name: Deploy Lambdas
         run: |
-          ROLE_ARN="arn:aws:iam::264483381689:role/github-lambdas" # 🔑 replace with your Lambda execution role ARN
+          ROLE_ARN="arn:aws:iam::264483381689:role/github-lambdas" # 🔑 replace with your role ARN
 
           for file in lambdas/*.py; do
-            # Skip non-Python files just in case
             [[ "$file" != *.py ]] && continue
 
-            base_name="${file##*/}"        # strip folder path
-            base_name="${base_name%.py}"   # remove .py
-            lambda_name="$base_name"
+            base_name="${file##*/}"
+            base_name="${base_name%.py}"
+            lambda_name="${base_name}-${branch_suffix}"
 
             echo "Processing Lambda function: $lambda_name"
 
-            # Zip this single Lambda file
             zip_file="${base_name}.zip"
-            zip -j "$zip_file" "$file"  # -j strips folder paths
+            zip -j "$zip_file" "$file"
 
-            # Check if Lambda exists
             if aws lambda get-function --function-name "$lambda_name" > /dev/null 2>&1; then
               echo "Updating existing Lambda: $lambda_name"
               aws lambda update-function-code \
