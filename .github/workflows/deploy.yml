@@ -1,21 +1,17 @@
-name: Deploy Lambdas from Folder
+name: Deploy Lambdas
 
 on:
   push:
     branches:
       - main
-      - dev-*   # all developer branches
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # 1️⃣ Checkout code
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -23,49 +19,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 3️⃣ Determine branch suffix for Lambda names
-      - name: Set branch prefix
-        id: branch
-        run: |
-          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            echo "branch_prefix=main" >> $GITHUB_ENV
-          else
-            branch="${GITHUB_REF_NAME#dev-}"
-            echo "branch_prefix=${branch}" >> $GITHUB_ENV
-          fi
-
-      # 4️⃣ Deploy each Python file in lambdas/ as a separate Lambda
       - name: Deploy Lambdas
         run: |
+          ROLE_ARN="arn:aws:iam::123456789012:role/MyLambdaExecutionRole" # 🔑 replace with your Lambda execution role ARN
+
           for file in lambdas/*.py; do
             # Skip non-Python files just in case
             [[ "$file" != *.py ]] && continue
 
-            # Extract base name and create Lambda name
             base_name="${file##*/}"        # strip folder path
             base_name="${base_name%.py}"   # remove .py
-            lambda_name="${base_name}"
+            lambda_name="$base_name"
 
-            echo "Deploying Lambda function: $lambda_name"
+            echo "Processing Lambda function: $lambda_name"
 
-            # Zip the file (flatten folder structure with -j)
+            # Zip this single Lambda file
             zip_file="${base_name}.zip"
-            zip -j "$zip_file" "$file"
+            zip -j "$zip_file" "$file"  # -j strips folder paths
 
-            # # Check if Lambda exists
-            # aws lambda get-function --function-name "$lambda_name" >/dev/null 2>&1
-            # if [ $? -ne 0 ]; then
-            #   echo "Creating Lambda $lambda_name"
-            #   aws lambda create-function \
-            #     --function-name "$lambda_name" \
-            #     --runtime python3.11 \
-            #     --arn:aws:iam::264483381689:role/github-lambdasn> \
-            #     --handler "${base_name}.lambda_handler" \
-            #     --zip-file "fileb://$zip_file"
-            # fi
-
-            # Update Lambda code
-            aws lambda update-function-code \
-              --function-name "$lambda_name" \
-              --zip-file "fileb://$zip_file"
+            # Check if Lambda exists
+            if aws lambda get-function --function-name "$lambda_name" > /dev/null 2>&1; then
+              echo "Updating existing Lambda: $lambda_name"
+              aws lambda update-function-code \
+                --function-name "$lambda_name" \
+                --zip-file fileb://"$zip_file"
+            else
+              echo "Creating new Lambda: $lambda_name"
+              aws lambda create-function \
+                --function-name "$lambda_name" \
+                --runtime python3.11 \
+                --role "$ROLE_ARN" \
+                --handler "${base_name}.lambda_handler" \
+                --zip-file fileb://"$zip_file"
+            fi
           done
