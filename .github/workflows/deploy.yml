@@ -52,17 +52,17 @@ jobs:
             zip_file="${base_name}.zip"
             zip -j "$zip_file" "$file"
 
-            # Check if Lambda exists
-            aws lambda get-function --function-name "$lambda_name" >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-              echo "Creating Lambda $lambda_name"
-              aws lambda create-function \
-                --function-name "$lambda_name" \
-                --runtime python3.11 \
-                --arn:aws:iam::264483381689:role/github-lambdasn> \
-                --handler "${base_name}.lambda_handler" \
-                --zip-file "fileb://$zip_file"
-            fi
+            # # Check if Lambda exists
+            # aws lambda get-function --function-name "$lambda_name" >/dev/null 2>&1
+            # if [ $? -ne 0 ]; then
+            #   echo "Creating Lambda $lambda_name"
+            #   aws lambda create-function \
+            #     --function-name "$lambda_name" \
+            #     --runtime python3.11 \
+            #     --arn:aws:iam::264483381689:role/github-lambdasn> \
+            #     --handler "${base_name}.lambda_handler" \
+            #     --zip-file "fileb://$zip_file"
+            # fi
 
             # Update Lambda code
             aws lambda update-function-code \
