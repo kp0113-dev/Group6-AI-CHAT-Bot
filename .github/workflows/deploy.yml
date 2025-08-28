@@ -1,4 +1,4 @@
-name: Deploy Lambda
+name: Deploy Lambda per Dev
 
 on:
   push:
@@ -9,13 +9,17 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      # Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Zip Lambda package
       - name: Zip Lambda package
         run: zip -r function.zip .
 
+      # Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -23,18 +27,40 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Determine Lambda function name
       - name: Set Lambda Function Name
         id: vars
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
             echo "lambda_name=ProjectProd-lambda" >> $GITHUB_ENV
           else
-            branch="${GITHUB_REF_NAME#dev-}" # strip "dev-"
+            branch="${GITHUB_REF_NAME#dev-}"  # strip "dev-" prefix
             echo "lambda_name=ProjectDev-${branch}-lambda" >> $GITHUB_ENV
-          fi
 
+      # Check if Lambda exists
+      - name: Check if Lambda exists
+        id: check_lambda
+        run: |
+          set +e
+          aws lambda get-function --function-name ${{ env.lambda_name }}
+          echo "exists=$?" >> $GITHUB_OUTPUT
+
+      # Create Lambda if it doesn’t exist
+      - name: Create Lambda if needed
+        if: steps.check_lambda.outputs.exists != '0'
+        run: |
+          echo "Lambda function ${{ env.lambda_name }} not found. Creating..."
+          aws lambda create-function \
+            --function-name ${{ env.lambda_name }} \
+            --runtime python3.11 \
+            --role arn:aws:iam::123456789012:role/ProjectDev-${{ github.ref_name#dev- }}-role \
+            --handler lambda_function.lambda_handler \
+            --zip-file fileb://function.zip
+
+      # Deploy code to Lambda
       - name: Deploy to Lambda
         run: |
+          echo "Deploying code to ${{ env.lambda_name }}"
           aws lambda update-function-code \
             --function-name ${{ env.lambda_name }} \
             --zip-file fileb://function.zip
