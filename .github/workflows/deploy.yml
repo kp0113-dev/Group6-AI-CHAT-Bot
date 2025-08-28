@@ -27,7 +27,7 @@ jobs:
         id: vars
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            echo "lambda_name=ProjectProd-lambda" >> $GITHUB_ENV
+            echo "lambda_name=lambda_handler" >> $GITHUB_ENV
           else
             branch="${GITHUB_REF_NAME#dev-}" # strip "dev-"
             echo "lambda_name=ProjectDev-${branch}-lambda" >> $GITHUB_ENV
