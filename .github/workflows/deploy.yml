@@ -31,7 +31,7 @@ jobs:
 
       - name: Deploy Lambdas
         run: |
-          ROLE_ARN="arn:aws:iam::264483381689:role/github-lambdas" # 🔑 replace with your role ARN
+          ROLE_ARN="arn:aws:iam::264483381689:role/github-lambdas"
 
           for file in lambdas/*.py; do
             [[ "$file" != *.py ]] && continue
