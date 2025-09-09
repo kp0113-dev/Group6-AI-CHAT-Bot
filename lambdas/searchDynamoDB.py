@@ -4,6 +4,7 @@ import boto3
 dynamodb = boto3.resource("dynamodb")
 
 def lambda_handler(event, context):
+    # Print statement for debugging in CloudWatch
     print("Dynamo search request:", json.dumps(event))
 
     intent_name = event["intentName"]
@@ -11,7 +12,7 @@ def lambda_handler(event, context):
 
     try:
         table = dynamodb.Table(intent_name)  # Table name = intent name
-        response = table.get_item(Key={"name": interpreted_value})
+        response = table.get_item(Key={"locationName": interpreted_value})
 
         if "Item" in response:
             result = f"Found: {response['Item']}"
