@@ -1,24 +1,28 @@
-import java 
+import json
+
 def lambda_handler(event, context):
-    #Log what LexBot sent to Lambda
-    print("Recieved event from Lexbot")
-    print("Recieved text from Lexbot")
-    print(json.dumps event)
-    return java.lang.System.getProperty("java.version")
-    return "Hello from Lambda"
+    print("Received event from Lex:")
+    print(json.dumps(event))
 
-#Used to access LexBot
-user_input = event.get("inputTrnascript", "No input provided")
+    intent_name = event["currentIntent"]["name"]
 
-#Returns to lex with a simple message
-response = {
-    "dialogAction": {
-        "type": "Close",
-        "fulfillmentState": "Fulfilled",
-        "message": {
-            "contentType": "PlainText",
-            "content": "Hello from Lambda, input recieved: {user_input}"
+    if intent_name == "AskLocation":
+        answer = "The charger cafe is at University Cir, Huntsville, AL 35816"
+    elif intent_name == "AskTime":
+        answer = "The charger cafe opens at 11am and closes at 8pm with a break between 3-4:30."
+    else:
+        answer = "Sorry, I don’t know that one."
+
+    response = {
+        "sessionAttributes": event.get("sessionAttributes", {}),
+        "dialogAction": {
+            "type": "Close",
+            "fulfillmentState": "Fulfilled",
+            "message": {
+                "contentType": "PlainText",
+                "content": answer
+            }
         }
     }
-}
-return response 
+
+    return response
