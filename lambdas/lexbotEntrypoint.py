@@ -16,18 +16,34 @@ def lambda_handler(event, context):
     # Get the current intent items
     intent_name = event["sessionState"]["intent"]["name"]
     slots = event["sessionState"]["intent"].get("slots", {})
-    interpreted_value = None
+    resolved_value = None
     
-    if "location" in slots and slots["location"] and "value" in slots["location"]:
-        interpreted_value = slots["location"]["value"].get("interpretedValue")
+    # Check if inetent is fulfilled and check if slot has 'value'
+    # If slot value exists then set the resolved value
+    # If slot value exists but resolved value does not then default to interpreted value
+    for slot_name, slot_data in slots.items():
+        if slot_data and "value" in slot_data:
+            resolved_value_list = slot_data["value"].get("resolvedValues", [])
+            try:
+                resolved_value = resolved_value_list[0]
+            except IndexError:
+                resolved_value = slots["location"]["value"].get("interpretedValue")
+            print(f"Resolved value for {slot_name}: {resolved_value}")
 
-    if not interpreted_value:
-        response_text = f"Could not determine interpreted value for {intent_name}"
+    # Return back to Lex and invoke slot prompt asking user to specify slot value
+    if resolved_value is None:
+        return {
+            "sessionState": {
+                "dialogAction": {"type": "Delegate"},
+                "intent": event["sessionState"]["intent"]
+            }
+        }
+
     else:
         # Call searchDynamoDB Lambda
         payload = {
             "intentName": intent_name,
-            "interpretedValue": interpreted_value
+            "resolvedValue": resolved_value
         }
         response = lambda_client.invoke(
             FunctionName="searchDynamoDB-dev-kamil",
