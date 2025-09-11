@@ -8,16 +8,16 @@ def lambda_handler(event, context):
     print("Dynamo search request:", json.dumps(event))
 
     intent_name = event["intentName"]
-    interpreted_value = event["interpretedValue"]
+    resolved_value = event["resolvedValue"]
 
     try:
         table = dynamodb.Table(intent_name)  # Table name = intent name
-        response = table.get_item(Key={"locationName": interpreted_value})
+        response = table.get_item(Key={"locationName": resolved_value})
 
         if "Item" in response:
             result = f"Found: {response['Item']}"
         else:
-            result = f"No entry found for '{interpreted_value}' in {intent_name} table."
+            result = f"No entry found for '{resolved_value}' in {intent_name} table."
 
     except Exception as e:
         result = f"Error querying DynamoDB: {str(e)}"
