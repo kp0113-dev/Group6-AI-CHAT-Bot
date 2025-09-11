@@ -25,7 +25,7 @@ def lambda_handler(event, context):
         if slot_data and "value" in slot_data:
             resolved_value_list = slot_data["value"].get("resolvedValues", [])
             try:
-                resolved_value = resolved_value_list[0]
+                resolved_value = resolved_value_list[0] # resolved_value returns as a list so pull the value from the first index
             except IndexError:
                 resolved_value = slots["location"]["value"].get("interpretedValue")
             print(f"Resolved value for {slot_name}: {resolved_value}")
