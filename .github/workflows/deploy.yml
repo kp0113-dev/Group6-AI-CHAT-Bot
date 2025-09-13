@@ -33,7 +33,7 @@ jobs:
         run: |
           ROLE_ARN="arn:aws:iam::264483381689:role/github-lambdas"
 
-          for file in lambdas/*; do
+          for file in lambdas/*.py; do
             [[ "$file" != *.py ]] && continue
 
             base_name="${file##*/}"
@@ -43,7 +43,7 @@ jobs:
             echo "Processing Lambda function: $lambda_name"
 
             zip_file="${base_name}.zip"
-            zip "$zip_file" "$file"
+            zip -r "$zip_file" "$file"
 
             if aws lambda get-function --function-name "$lambda_name" > /dev/null 2>&1; then
               echo "Updating existing Lambda: $lambda_name"
