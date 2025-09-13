@@ -43,7 +43,7 @@ jobs:
             echo "Processing Lambda function: $lambda_name"
 
             zip_file="${base_name}.zip"
-            zip -r "$zip_file" "$file" "$(dirname "$file")/heuristics"
+            zip -r "$zip_file" -j "$file" "$(dirname "$file")/heuristics"
 
             if aws lambda get-function --function-name "$lambda_name" > /dev/null 2>&1; then
               echo "Updating existing Lambda: $lambda_name"
