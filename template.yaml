@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ChargerGPT – An AWS-based student assistant chatbot for UAH campus
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 15
+    MemorySize: 256
+    Tracing: Active
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+        FEATURE_BEDROCK: "false"  # toggle to "true" after you enable Bedrock access
+        DEFAULT_STUDENT_ID: "student123"  # used for simulated schedule lookups
+        FEATURE_S3_DATA: "false"  # when true, Lambda will read optional JSON data from S3 instead of DynamoDB
+        S3_BUILDINGS_KEY: "data/buildings.json"
+        S3_SCHEDULES_KEY: "data/schedules.json"
+        S3_INSTRUCTORS_KEY: "data/instructors.json"
+
+Parameters:
+  ProjectPrefix:
+    Type: String
+    Default: chargergpt
+  Stage:
+    Type: String
+    Default: dev
+
+Resources:
+  FaqsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectPrefix}-${Stage}-faqs-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+  BuildingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectPrefix}-${Stage}-buildings"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: building_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: building_id
+          KeyType: HASH
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+  SchedulesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectPrefix}-${Stage}-schedules"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: student_id
+          AttributeType: S
+        - AttributeName: course_code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: student_id
+          KeyType: HASH
+        - AttributeName: course_code
+          KeyType: RANGE
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+  InstructorsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectPrefix}-${Stage}-instructors"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: course_code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: course_code
+          KeyType: HASH
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+  ChargerGPTFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectPrefix}-${Stage}-handler"
+      Handler: charger_gpt/handler.lambda_handler
+      CodeUri: lambdas/
+      Environment:
+        Variables:
+          TABLE_BUILDINGS: !Ref BuildingsTable
+          TABLE_SCHEDULES: !Ref SchedulesTable
+          TABLE_INSTRUCTORS: !Ref InstructorsTable
+          S3_BUCKET_FAQS: !Ref FaqsBucket
+          BEDROCK_MODEL_ID: ""  # fill when you enable Bedrock
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt BuildingsTable.Arn
+                - !GetAtt SchedulesTable.Arn
+                - !GetAtt InstructorsTable.Arn
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:ListBucket
+              Resource:
+                - !Sub "arn:aws:s3:::${FaqsBucket}"
+                - !Sub "arn:aws:s3:::${FaqsBucket}/*"
+            # Bedrock invoke permission (feature-flagged in code)
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+      Events:
+        # Example API event to allow test via API Gateway if needed later
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /ping
+            Method: get
+
+Outputs:
+  FunctionName:
+    Value: !Ref ChargerGPTFunction
+  BuildingsTableName:
+    Value: !Ref BuildingsTable
+  SchedulesTableName:
+    Value: !Ref SchedulesTable
+  InstructorsTableName:
+    Value: !Ref InstructorsTable
+  FaqsBucketName:
+    Value: !Ref FaqsBucket

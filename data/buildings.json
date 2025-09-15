@@ -1,0 +1,14 @@
+[
+  {
+    "building_id": "LIB",
+    "name": "Library",
+    "hours": "Mon-Thu 7:30am-10pm; Fri 7:30am-8pm; Sat 8am-1pm; Sun 12pm-9pm",
+    "address": "4700 Holmes Ave NW, Huntsville, AL 35805"
+  },
+  {
+    "building_id": "ENG",
+    "name": "Engineering Building",
+    "hours": "Mon-Sun 7am-11pm",
+    "address": "Engineering Bldg, Huntsville, AL 35805"
+  }
+]

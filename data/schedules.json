@@ -1,0 +1,16 @@
+[
+  {
+    "student_id": "student123",
+    "course_code": "CS101",
+    "building": "Engineering Building",
+    "location": "Room 201",
+    "time": "Mon/Wed/Fri 10:00-10:50"
+  },
+  {
+    "student_id": "student123",
+    "course_code": "ECE301",
+    "building": "Engineering Building",
+    "location": "Room 305",
+    "time": "Tue/Thu 2:00-3:15"
+  }
+]

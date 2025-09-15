@@ -1,0 +1,14 @@
+{
+  "faqs": [
+    {
+      "question": "What is the campus dress code?",
+      "answer": "UAH encourages appropriate attire in academic settings. There is no strict dress code, but students should dress respectfully and safely for labs.",
+      "keywords": ["dress code", "attire", "clothes"]
+    },
+    {
+      "question": "What is the number for campus security?",
+      "answer": "UAH Police Department (Campus Security): 256-824-6596. For emergencies, dial 911.",
+      "keywords": ["security", "police", "emergency", "number"]
+    }
+  ]
+}

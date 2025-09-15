@@ -1,0 +1,14 @@
+[
+  {
+    "course_code": "ECE301",
+    "instructor_name": "Dr. Jane Smith",
+    "email": "jane.smith@uah.edu",
+    "office": "ENG 450"
+  },
+  {
+    "course_code": "CS101",
+    "instructor_name": "Prof. John Doe",
+    "email": "john.doe@uah.edu",
+    "office": "ENG 320"
+  }
+]
