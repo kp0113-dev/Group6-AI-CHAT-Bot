@@ -23,11 +23,16 @@ jobs:
       # Optional: set LAMBDA_FUNCTION_NAME at repo or org level (Settings > Variables)
       # Defaults to 'chargergpt-dev-handler' if not provided
       - name: Package and Deploy Lambda
-        working-directory: chatbot
         run: |
           set -euo pipefail
           LAMBDA_FUNCTION_NAME="${LAMBDA_FUNCTION_NAME:-chargergpt-dev-handler}"
           echo "Deploying function: ${LAMBDA_FUNCTION_NAME}"
+
+          # If repository contains a top-level 'chatbot' directory, enter it
+          if [ -d "chatbot/lambdas" ]; then
+            echo "Entering chatbot/ directory"
+            cd chatbot
+          fi
 
           # Package: ensure the zip root contains the 'charger_gpt/' package
           rm -f lambda.zip
