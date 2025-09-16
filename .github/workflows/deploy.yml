@@ -44,6 +44,7 @@ jobs:
 
             zip_file="${base_name}.zip"
             zip -j "$zip_file" "$file"
+            zip -r "$zip_file" "$(dirname "$file")/heuristics"
 
             if aws lambda get-function --function-name "$lambda_name" > /dev/null 2>&1; then
               echo "Updating existing Lambda: $lambda_name"
