@@ -58,7 +58,7 @@ def lambda_handler(event, context):
             "resolvedValue": resolved_value
         }
         response = lambda_client.invoke(
-            FunctionName="searchDynamoDB-dev-kamil",
+            FunctionName="searchDynamoDB-prod",
             InvocationType="RequestResponse",
             Payload=json.dumps(payload)
         )
