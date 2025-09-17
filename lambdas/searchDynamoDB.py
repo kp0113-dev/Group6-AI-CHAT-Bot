@@ -23,6 +23,6 @@ def lambda_handler(event, context):
         result = f"Error querying DynamoDB: {str(e)}"
 
     return {
-        "result": result
+        "dbResult": result #Returns JSON object only from bedrock
     }
     
