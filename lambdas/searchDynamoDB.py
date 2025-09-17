@@ -4,25 +4,31 @@ import boto3
 dynamodb = boto3.resource("dynamodb")
 
 def lambda_handler(event, context):
-    # Print statement for debugging in CloudWatch
     print("Dynamo search request:", json.dumps(event))
 
     intent_name = event["intentName"]
     resolved_value = event["resolvedValue"]
 
     try:
-        table = dynamodb.Table(intent_name)  # Table name = intent name
+        table = dynamodb.Table(intent_name)  # Each intent = table
         response = table.get_item(Key={"locationName": resolved_value})
 
         if "Item" in response:
-            result = f"Found: {response['Item']}"
+            # Return the raw item back, not just a string
+            result = {
+                "status": "FOUND",
+                "item": response["Item"]
+            }
         else:
-            result = f"No entry found for '{resolved_value}' in {intent_name} table."
+            result = {
+                "status": "NOT_FOUND",
+                "message": f"No entry found for '{resolved_value}' in {intent_name} table."
+            }
 
     except Exception as e:
-        result = f"Error querying DynamoDB: {str(e)}"
+        result = {
+            "status": "ERROR",
+            "message": str(e)
+        }
 
-    return {
-        "dbResult": result #Returns JSON object only from bedrock
-    }
-    
+    return result
