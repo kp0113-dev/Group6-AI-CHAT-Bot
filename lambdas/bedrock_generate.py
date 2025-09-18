@@ -42,7 +42,7 @@ def lambda_handler(event, context):
 
     try:
         response = bedrock.invoke_model(
-            modelId="anthropic.claude-v2",  # Replace with whichever model you want
+            modelId="anthropic Claude 3.5 Sonnet v2 ",  
             body=json.dumps({
                 "prompt": prompt,
                 "max_tokens_to_sample": 300
