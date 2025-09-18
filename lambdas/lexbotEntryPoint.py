@@ -64,6 +64,19 @@ def lambda_handler(event, context):
         )
         search_result = json.loads(response["Payload"].read())
         response_text = search_result.get("result", "No result returned.")
+
+    # Call Bedrock Lambda
+    bedrock_payload = {
+        "question" = : user_input,
+        "result" : search_result
+    }
+    bedrock_response = lambda_client.invoke(
+        FunctionName="bedrockGenerate-prod",
+        InvocationType="RequestResponse",
+        Payload=json.dumps(bedrock_payload)
+    )
+    bedrock_result = json.loads(bedrock_response["Payload"].read())
+
        
     # MAIN RETURN RESPONSE
     return {
