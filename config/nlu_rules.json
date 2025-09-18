@@ -1,0 +1,13 @@
+{
+  "rules": [
+    { "keywords": ["where", "is"], "intent": "GetCampusLocationIntent" },
+    { "keywords": ["where", "is", "the"], "intent": "GetCampusLocationIntent" },
+    { "keywords": ["what", "time", "open"], "intent": "GetBuildingHoursIntent" },
+    { "keywords": ["when", "open"], "intent": "GetBuildingHoursIntent" },
+    { "keywords": ["hours"], "intent": "GetBuildingHoursIntent" },
+    { "keywords": ["who", "teaches"], "intent": "GetInstructorLookupIntent" },
+    { "keywords": ["instructor", "for"], "intent": "GetInstructorLookupIntent" },
+    { "keywords": ["when", "is"], "intent": "GetClassScheduleIntent" },
+    { "keywords": ["schedule", "for"], "intent": "GetClassScheduleIntent" }
+  ]
+}

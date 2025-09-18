@@ -35,16 +35,29 @@ def _base_response(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def close_intent(event: Dict[str, Any], message: str) -> Dict[str, Any]:
+def get_session_attrs(event: Dict[str, Any]) -> Dict[str, str]:
+    return copy.deepcopy(event.get("sessionState", {}).get("sessionAttributes", {}) or {})
+
+
+def _merge_session_attrs(resp: Dict[str, Any], new_attrs: Optional[Dict[str, str]]) -> None:
+    if new_attrs is None:
+        return
+    current = resp.get("sessionState", {}).get("sessionAttributes", {}) or {}
+    merged = {**current, **new_attrs}
+    resp["sessionState"]["sessionAttributes"] = merged
+
+
+def close_intent(event: Dict[str, Any], message: str, session_attrs: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     resp = _base_response(event)
     resp["sessionState"]["intent"] = resp["sessionState"].get("intent", {})
     resp["sessionState"]["intent"]["state"] = "Fulfilled"
     resp["messages"] = [build_lex_message(message)]
     resp["sessionState"]["dialogAction"] = {"type": "Close"}
+    _merge_session_attrs(resp, session_attrs)
     return resp
 
 
-def elicit_slot(event: Dict[str, Any], slot_to_elicit: str, prompt: str) -> Dict[str, Any]:
+def elicit_slot(event: Dict[str, Any], slot_to_elicit: str, prompt: str, session_attrs: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     resp = _base_response(event)
     resp["sessionState"]["intent"] = resp["sessionState"].get("intent", {})
     resp["sessionState"]["dialogAction"] = {
@@ -52,4 +65,5 @@ def elicit_slot(event: Dict[str, Any], slot_to_elicit: str, prompt: str) -> Dict
         "slotToElicit": slot_to_elicit,
     }
     resp["messages"] = [build_lex_message(prompt)]
+    _merge_session_attrs(resp, session_attrs)
     return resp

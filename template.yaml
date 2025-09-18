@@ -17,6 +17,9 @@ Globals:
         S3_BUILDINGS_KEY: "data/buildings.json"
         S3_SCHEDULES_KEY: "data/schedules.json"
         S3_INSTRUCTORS_KEY: "data/instructors.json"
+        FEATURE_CONVO_HISTORY: "true"
+        S3_NLU_RULES_KEY: "config/nlu_rules.json"
+        CONVERSATIONS_TTL_DAYS: "30"
 
 Parameters:
   ProjectPrefix:
@@ -85,6 +88,27 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
 
+  ConversationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectPrefix}-${Stage}-conversations"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: memory_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: memory_key
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
   ChargerGPTFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -96,6 +120,7 @@ Resources:
           TABLE_BUILDINGS: !Ref BuildingsTable
           TABLE_SCHEDULES: !Ref SchedulesTable
           TABLE_INSTRUCTORS: !Ref InstructorsTable
+          TABLE_CONVERSATIONS: !Ref ConversationsTable
           S3_BUCKET_FAQS: !Ref FaqsBucket
           BEDROCK_MODEL_ID: ""  # fill when you enable Bedrock
       Policies:
@@ -106,10 +131,12 @@ Resources:
                 - dynamodb:GetItem
                 - dynamodb:Query
                 - dynamodb:Scan
+                - dynamodb:PutItem
               Resource:
                 - !GetAtt BuildingsTable.Arn
                 - !GetAtt SchedulesTable.Arn
                 - !GetAtt InstructorsTable.Arn
+                - !GetAtt ConversationsTable.Arn
             - Effect: Allow
               Action:
                 - s3:GetObject
@@ -139,5 +166,7 @@ Outputs:
     Value: !Ref SchedulesTable
   InstructorsTableName:
     Value: !Ref InstructorsTable
+  ConversationsTableName:
+    Value: !Ref ConversationsTable
   FaqsBucketName:
     Value: !Ref FaqsBucket

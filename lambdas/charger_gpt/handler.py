@@ -13,6 +13,7 @@ from .utils import (
     get_slot_value,
     get_intent_name_v2,
     get_slots_v2,
+    get_session_attrs,
 )
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -26,6 +27,7 @@ BEDROCK = boto3.client("bedrock-runtime", region_name=os.getenv("AWS_REGION", "u
 TABLE_BUILDINGS = os.getenv("TABLE_BUILDINGS")
 TABLE_SCHEDULES = os.getenv("TABLE_SCHEDULES")
 TABLE_INSTRUCTORS = os.getenv("TABLE_INSTRUCTORS")
+TABLE_CONVERSATIONS = os.getenv("TABLE_CONVERSATIONS")
 S3_BUCKET_FAQS = os.getenv("S3_BUCKET_FAQS")
 FEATURE_BEDROCK = os.getenv("FEATURE_BEDROCK", "false").lower() == "true"
 DEFAULT_STUDENT_ID = os.getenv("DEFAULT_STUDENT_ID", "student123")
@@ -34,10 +36,14 @@ S3_BUILDINGS_KEY = os.getenv("S3_BUILDINGS_KEY", "data/buildings.json")
 S3_SCHEDULES_KEY = os.getenv("S3_SCHEDULES_KEY", "data/schedules.json")
 S3_INSTRUCTORS_KEY = os.getenv("S3_INSTRUCTORS_KEY", "data/instructors.json")
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "")
+FEATURE_CONVO_HISTORY = os.getenv("FEATURE_CONVO_HISTORY", "true").lower() == "true"
+S3_NLU_RULES_KEY = os.getenv("S3_NLU_RULES_KEY", "config/nlu_rules.json")
+CONVERSATIONS_TTL_DAYS = int(os.getenv("CONVERSATIONS_TTL_DAYS", "30"))
 
 # Cache FAQs on cold start
 _FAQS_CACHE: Optional[Dict[str, Any]] = None
 _DATA_CACHE: Dict[str, Any] = {}
+_NLU_RULES: Optional[Dict[str, Any]] = None
 
 
 def _load_faqs() -> Dict[str, Any]:
@@ -85,6 +91,203 @@ def _is_building_match(item_name: str, query: str) -> bool:
         return True
     # Allow substring containment (e.g., 'library' vs 'm. louis salmon library')
     return a in b or b in a
+
+
+PRONOUNS_BUILDING = {"it", "there", "that", "the building"}
+PRONOUNS_COURSE = {"it", "that", "this", "the course", "the class"}
+
+
+def _resolve_building_reference(candidate: Optional[str], transcript: str, session_attrs: Dict[str, str]) -> Optional[str]:
+    """Resolve building name using slot candidate, transcript text, and prior memory.
+    If the candidate is a pronoun (e.g., 'it'), use last_building_name from session attrs.
+    """
+    cand = (candidate or "").strip()
+    if cand:
+        # If it's a pronoun, try memory
+        if _normalize(cand) in PRONOUNS_BUILDING:
+            remembered = session_attrs.get("last_building_name")
+            return remembered or cand
+        return cand
+
+    # No slot captured; try transcript words for a pronoun
+    t = _normalize(transcript)
+    if any(p in t.split() for p in PRONOUNS_BUILDING):
+        remembered = session_attrs.get("last_building_name")
+        if remembered:
+            return remembered
+    return cand or None
+
+
+def _normalize_course_code(text: Optional[str]) -> str:
+    t = (text or "").strip().upper()
+    # remove spaces and hyphens
+    return t.replace(" ", "").replace("-", "")
+
+
+def _resolve_course_reference(candidate: Optional[str], transcript: str, session_attrs: Dict[str, str]) -> Optional[str]:
+    cand = (candidate or "").strip()
+    if cand:
+        if _normalize(cand) in PRONOUNS_COURSE:
+            remembered = session_attrs.get("last_course_code")
+            return remembered or cand
+        return _normalize_course_code(cand)
+    t = _normalize(transcript)
+    if any(p in t.split() for p in PRONOUNS_COURSE):
+        remembered = session_attrs.get("last_course_code")
+        if remembered:
+            return remembered
+    return None
+
+
+def _load_nlu_rules() -> Dict[str, Any]:
+    global _NLU_RULES
+    if _NLU_RULES is not None:
+        return _NLU_RULES
+    rules: Dict[str, Any] = {}
+    try:
+        cfg = _load_json_from_s3(S3_NLU_RULES_KEY)
+        if isinstance(cfg, dict):
+            rules = cfg
+    except Exception as e:
+        logger.debug("No NLU rules found in S3: %s", e)
+    _NLU_RULES = rules
+    return rules
+
+
+def infer_intent_from_rules(text: str) -> Optional[str]:
+    """Infer a Lex intent name from incomplete phrases using simple rules.
+    Rules are optionally loaded from S3 (S3_NLU_RULES_KEY) and can specify
+    keyword lists mapping to target intents. We also include built-in defaults.
+    """
+    t = _normalize(text)
+    rules = _load_nlu_rules()
+    try:
+        for rule in rules.get("rules", []):
+            kws = [k.lower() for k in rule.get("keywords", [])]
+            if kws and all(k in t for k in kws):
+                return rule.get("intent")
+    except Exception:
+        pass
+    # Built-in fallbacks
+    if t.startswith("where is") or t.startswith("where's") or t.startswith("where is the"):
+        return "GetCampusLocationIntent"
+    if _looks_like_hours_query(t):
+        return "GetBuildingHoursIntent"
+    return None
+
+
+def _append_turn_history(user_id: str, event: Dict[str, Any], response_message: str, session_attrs: Dict[str, str]) -> None:
+    if not (FEATURE_CONVO_HISTORY and TABLE_CONVERSATIONS):
+        return
+    try:
+        table = DDB.Table(TABLE_CONVERSATIONS)
+        import time
+        ts_ms = int(time.time() * 1000)
+        # TTL for turn history items only (context item is not TTL'd)
+        expires_at = int(time.time()) + (CONVERSATIONS_TTL_DAYS * 86400)
+        transcript = event.get("inputTranscript") or event.get("inputText") or ""
+        intent = get_intent_name_v2(event)
+        table.put_item(Item={
+            "user_id": user_id,
+            "memory_key": f"turn#{ts_ms}",
+            "data": json.dumps({
+                "user": transcript,
+                "assistant": response_message,
+                "intent": intent,
+                "session_attrs": session_attrs,
+            })[:35000],
+            "expires_at": expires_at,
+        })
+    except Exception as e:
+        logger.debug("_append_turn_history failed: %s", e)
+
+
+def _looks_like_hours_query(text: str) -> bool:
+    t = _normalize(text)
+    keywords = ("hours", "open", "opening", "close", "closing")
+    return any(k in t for k in keywords)
+
+
+def _looks_like_location_query(text: str) -> bool:
+    t = _normalize(text)
+    return t.startswith("where is") or t.startswith("where's") or ("location" in t)
+
+
+def _looks_like_schedule_query(text: str) -> bool:
+    t = _normalize(text)
+    return (
+        (t.startswith("when is") or t.startswith("what time")) and ("class" in t or "it" in t or "schedule" in t)
+    ) or ("schedule" in t and ("for" in t or "of" in t))
+
+
+def _looks_like_instructor_query(text: str) -> bool:
+    t = _normalize(text)
+    return ("who teaches" in t) or ("instructor" in t) or ("professor" in t) or ("teacher" in t)
+
+
+def _extract_building_from_text(text: str) -> Optional[str]:
+    t = _normalize(text)
+    for item in get_buildings_data():
+        name = item.get("name", "")
+        if _is_building_match(name, t):
+            return item.get("name")
+    return None
+
+
+def _get_user_id(event: Dict[str, Any]) -> str:
+    # Best effort: Lex V2 often provides sessionId; fall back to DEFAULT_STUDENT_ID
+    return (
+        event.get("sessionId")
+        or event.get("userId")
+        or event.get("sessionState", {}).get("userId")
+        or DEFAULT_STUDENT_ID
+    )
+
+
+def load_persistent_memory(user_id: str) -> Dict[str, str]:
+    if not TABLE_CONVERSATIONS:
+        return {}
+    table = DDB.Table(TABLE_CONVERSATIONS)
+    try:
+        resp = table.get_item(Key={"user_id": user_id, "memory_key": "context"})
+        item = resp.get("Item")
+        if not item:
+            return {}
+        raw = item.get("data") or "{}"
+        if isinstance(raw, str):
+            return json.loads(raw)
+        return raw if isinstance(raw, dict) else {}
+    except Exception as e:
+        logger.warning("load_persistent_memory failed: %s", e)
+        return {}
+
+
+def save_persistent_memory(user_id: str, session_attrs: Dict[str, str]) -> None:
+    if not TABLE_CONVERSATIONS:
+        return
+    table = DDB.Table(TABLE_CONVERSATIONS)
+    try:
+        table.put_item(Item={
+            "user_id": user_id,
+            "memory_key": "context",
+            "data": json.dumps(session_attrs)[:35000],  # guard size
+        })
+    except Exception as e:
+        logger.warning("save_persistent_memory failed: %s", e)
+
+
+def _log_session(event: Dict[str, Any], action: str, session_attrs: Dict[str, str], extra: Optional[Dict[str, Any]] = None) -> None:
+    try:
+        payload = {
+            "action": action,
+            "intent": get_intent_name_v2(event),
+            "session_attrs": session_attrs,
+        }
+        if extra:
+            payload.update(extra)
+        logger.info("session_state: %s", json.dumps(payload)[:8000])
+    except Exception as e:
+        logger.debug("_log_session failed: %s", e)
 
 
 def _load_json_from_s3(key: str) -> Any:
@@ -185,28 +388,32 @@ def _invoke_bedrock(prompt: str) -> Optional[str]:
         return None
 
 
-def handle_building_hours(building_name: str) -> str:
+def find_building(building_query: str) -> Optional[dict]:
     items = get_buildings_data()
     for item in items:
-        if _is_building_match(item.get("name", ""), building_name):
-            hours = item.get("hours", "Hours not available")
-            addr = item.get("address", "Address not available")
-            return f"{item.get('name')} hours: {hours}. Address: {addr}."
+        if _is_building_match(item.get("name", ""), building_query):
+            return item
+    return None
 
+
+def handle_building_hours(building_name: str) -> str:
+    item = find_building(building_name)
+    if item:
+        hours = item.get("hours", "Hours not available")
+        addr = item.get("address", "Address not available")
+        return f"{item.get('name')} hours: {hours}. Address: {addr}."
     return "I couldn't find that building. Try asking 'What are the hours for the library?'"
 
 
 def handle_building_location(building_name: str) -> str:
-    items = get_buildings_data()
-    for item in items:
-        if _is_building_match(item.get("name", ""), building_name):
-            addr = item.get("address", "Address not available")
-            lat = item.get("lat")
-            lon = item.get("lon")
-            if lat is not None and lon is not None:
-                return f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
-            return f"{item.get('name')} is at {addr}."
-
+    item = find_building(building_name)
+    if item:
+        addr = item.get("address", "Address not available")
+        lat = item.get("lat")
+        lon = item.get("lon")
+        if lat is not None and lon is not None:
+            return f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
+        return f"{item.get('name')} is at {addr}."
     return "I couldn't find that building. Try 'Where is the engineering building?'"
 
 
@@ -280,45 +487,189 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # Attempt to infer missing BuildingName from transcript for robustness (best-effort)
     transcript = event.get("inputTranscript") or event.get("inputText") or ""
 
+    session_attrs = get_session_attrs(event)
+    user_id = _get_user_id(event)
+    # Merge persistent memory (DynamoDB) into current session attrs
+    persisted = load_persistent_memory(user_id)
+    if persisted:
+        # Do not overwrite current session fields if already present in this turn
+        merged = {**persisted, **session_attrs}
+        session_attrs = merged
+
+    # Try rule-based inference for incomplete/ambiguous phrases
+    inferred = infer_intent_from_rules(transcript)
+    if inferred and (intent_name == "AMAZON.FallbackIntent" or intent_name not in {"GetBuildingHoursIntent","GetCampusLocationIntent","GetFAQIntent","GetClassScheduleIntent","GetInstructorLookupIntent"}):
+        intent_name = inferred
+
     if intent_name == "GetBuildingHoursIntent":
-        building_name = get_slot_value(slots, "BuildingName") or transcript
+        candidate = get_slot_value(slots, "BuildingName")
+        building_name = _resolve_building_reference(candidate, transcript, session_attrs) or transcript
         if not building_name:
-            return elicit_slot(event, "BuildingName", "Which building?")
-        message = handle_building_hours(building_name)
-        return close_intent(event, message)
+            return elicit_slot(event, "BuildingName", "Which building?", session_attrs)
+        item = find_building(building_name)
+        if item:
+            session_attrs.update({
+                "last_building_name": item.get("name", ""),
+                "last_intent": intent_name,
+            })
+            hours = item.get("hours", "Hours not available")
+            addr = item.get("address", "Address not available")
+            msg = f"{item.get('name')} hours: {hours}. Address: {addr}."
+            _log_session(event, "building_hours", session_attrs, {"building": item.get("name")})
+            save_persistent_memory(user_id, session_attrs)
+            _append_turn_history(user_id, event, msg, session_attrs)
+            return close_intent(event, msg, session_attrs)
+        _log_session(event, "building_hours_not_found", session_attrs, {"query": building_name})
+        save_persistent_memory(user_id, session_attrs)
+        _append_turn_history(user_id, event, "I couldn't find that building. Try asking 'What are the hours for the library?'", session_attrs)
+        return close_intent(event, "I couldn't find that building. Try asking 'What are the hours for the library?'", session_attrs)
 
     if intent_name == "GetCampusLocationIntent":
-        building_name = get_slot_value(slots, "BuildingName") or transcript
+        candidate = get_slot_value(slots, "BuildingName")
+        building_name = _resolve_building_reference(candidate, transcript, session_attrs) or transcript
         if not building_name:
-            return elicit_slot(event, "BuildingName", "Which building?")
-        message = handle_building_location(building_name)
-        return close_intent(event, message)
+            return elicit_slot(event, "BuildingName", "Which building?", session_attrs)
+        item = find_building(building_name)
+        if item:
+            session_attrs.update({
+                "last_building_name": item.get("name", ""),
+                "last_intent": intent_name,
+            })
+            addr = item.get("address", "Address not available")
+            lat = item.get("lat")
+            lon = item.get("lon")
+            if lat is not None and lon is not None:
+                msg = f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
+            else:
+                msg = f"{item.get('name')} is at {addr}."
+            return close_intent(event, msg, session_attrs)
+        _log_session(event, "building_location_not_found", session_attrs, {"query": building_name})
+        save_persistent_memory(user_id, session_attrs)
+        _append_turn_history(user_id, event, "I couldn't find that building. Try 'Where is the engineering building?'", session_attrs)
+        return close_intent(event, "I couldn't find that building. Try 'Where is the engineering building?'", session_attrs)
 
     if intent_name == "GetFAQIntent":
         topic = get_slot_value(slots, "FaqTopic")
         if not topic:
-            return elicit_slot(event, "FaqTopic", "What topic would you like to ask about?")
+            return elicit_slot(event, "FaqTopic", "What topic would you like to ask about?", session_attrs)
+        session_attrs.update({"last_intent": intent_name, "last_topic": topic})
         message = handle_faq(topic)
-        return close_intent(event, message)
+        _log_session(event, "faq", session_attrs, {"topic": topic})
+        save_persistent_memory(user_id, session_attrs)
+        _append_turn_history(user_id, event, message, session_attrs)
+        return close_intent(event, message, session_attrs)
 
     if intent_name == "GetClassScheduleIntent":
         if os.getenv("FEATURE_SCHEDULES", "true").lower() != "true":
-            return close_intent(event, "Class schedule feature is currently disabled.")
+            _log_session(event, "schedules_disabled", session_attrs)
+            save_persistent_memory(user_id, session_attrs)
+            return close_intent(event, "Class schedule feature is currently disabled.", session_attrs)
         course_code = get_slot_value(slots, "CourseCode")
+        # If CourseCode is a pronoun like "it", treat as missing
+        if course_code and _normalize(course_code) in PRONOUNS_COURSE:
+            course_code = None
         if not course_code:
-            return elicit_slot(event, "CourseCode", "Which course code? e.g., CS101")
+            # If user said something like "When is it open?" and Lex misrouted here,
+            # try to answer building hours using last_building_name memory.
+            if _looks_like_hours_query(transcript) and session_attrs.get("last_building_name"):
+                bname = session_attrs.get("last_building_name")
+                item = find_building(bname)
+                if item:
+                    hours = item.get("hours", "Hours not available")
+                    addr = item.get("address", "Address not available")
+                    msg = f"{item.get('name')} hours: {hours}. Address: {addr}."
+                    _log_session(event, "hours_reroute_from_schedule", session_attrs, {"building": item.get("name")})
+                    save_persistent_memory(user_id, session_attrs)
+                    _append_turn_history(user_id, event, msg, session_attrs)
+                    return close_intent(event, msg, session_attrs)
+            # If user said something like "Where is it?", reroute to location
+            if _looks_like_location_query(transcript) and session_attrs.get("last_building_name"):
+                bname = session_attrs.get("last_building_name")
+                item = find_building(bname)
+                if item:
+                    addr = item.get("address", "Address not available")
+                    lat = item.get("lat")
+                    lon = item.get("lon")
+                    if lat is not None and lon is not None:
+                        msg = f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
+                    else:
+                        msg = f"{item.get('name')} is at {addr}."
+                    _log_session(event, "location_reroute_from_schedule", session_attrs, {"building": item.get("name")})
+                    save_persistent_memory(user_id, session_attrs)
+                    _append_turn_history(user_id, event, msg, session_attrs)
+                    return close_intent(event, msg, session_attrs)
+            return elicit_slot(event, "CourseCode", "Which course code? e.g., CS101", session_attrs)
         student_id = DEFAULT_STUDENT_ID
         message = handle_class_schedule(student_id, course_code)
-        return close_intent(event, message)
+        session_attrs.update({"last_intent": intent_name, "last_course_code": (course_code or "").upper()})
+        _log_session(event, "class_schedule", session_attrs, {"course_code": (course_code or "").upper()})
+        _append_turn_history(user_id, event, message, session_attrs)
+        return close_intent(event, message, session_attrs)
 
     if intent_name == "GetInstructorLookupIntent":
         if os.getenv("FEATURE_INSTRUCTORS", "true").lower() != "true":
-            return close_intent(event, "Instructor lookup feature is currently disabled.")
+            _log_session(event, "instructors_disabled", session_attrs)
+            save_persistent_memory(user_id, session_attrs)
+            return close_intent(event, "Instructor lookup feature is currently disabled.", session_attrs)
         course_code = get_slot_value(slots, "CourseCode")
+        # If CourseCode is a pronoun like "it", treat as missing and elicit
+        if course_code and _normalize(course_code) in PRONOUNS_COURSE:
+            course_code = None
         if not course_code:
-            return elicit_slot(event, "CourseCode", "Which course code? e.g., ECE301")
+            return elicit_slot(event, "CourseCode", "Which course code? e.g., ECE301", session_attrs)
         message = handle_instructor_lookup(course_code)
-        return close_intent(event, message)
+        session_attrs.update({"last_intent": intent_name, "last_course_code": (course_code or "").upper()})
+        _log_session(event, "instructor_lookup", session_attrs, {"course_code": (course_code or "").upper()})
+        _append_turn_history(user_id, event, message, session_attrs)
+        return close_intent(event, message, session_attrs)
 
     # Fallback
-    return close_intent(event, "Sorry, I didn't understand that. You can ask about building hours, locations, or FAQs.")
+    # Course follow-ups using remembered course when user asks generic questions
+    if _looks_like_schedule_query(transcript) and session_attrs.get("last_course_code"):
+        lc = session_attrs.get("last_course_code")
+        student_id = DEFAULT_STUDENT_ID
+        message = handle_class_schedule(student_id, lc)
+        _log_session(event, "fallback_schedule", session_attrs, {"course_code": lc})
+        save_persistent_memory(user_id, session_attrs)
+        _append_turn_history(user_id, event, message, session_attrs)
+        return close_intent(event, message, session_attrs)
+    if _looks_like_instructor_query(transcript) and session_attrs.get("last_course_code"):
+        lc = session_attrs.get("last_course_code")
+        message = handle_instructor_lookup(lc)
+        _log_session(event, "fallback_instructor", session_attrs, {"course_code": lc})
+        save_persistent_memory(user_id, session_attrs)
+        _append_turn_history(user_id, event, message, session_attrs)
+        return close_intent(event, message, session_attrs)
+
+    # If this looks like a location or hours query and we have a remembered building, answer it here.
+    if _looks_like_location_query(transcript) and session_attrs.get("last_building_name"):
+        bname = session_attrs.get("last_building_name")
+        item = find_building(bname)
+        if item:
+            addr = item.get("address", "Address not available")
+            lat = item.get("lat")
+            lon = item.get("lon")
+            if lat is not None and lon is not None:
+                msg = f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
+            else:
+                msg = f"{item.get('name')} is at {addr}."
+            _log_session(event, "fallback_location", session_attrs, {"building": item.get("name")})
+            save_persistent_memory(user_id, session_attrs)
+            _append_turn_history(user_id, event, msg, session_attrs)
+            return close_intent(event, msg, session_attrs)
+    if _looks_like_hours_query(transcript) and session_attrs.get("last_building_name"):
+        bname = session_attrs.get("last_building_name")
+        item = find_building(bname)
+        if item:
+            hours = item.get("hours", "Hours not available")
+            addr = item.get("address", "Address not available")
+            msg = f"{item.get('name')} hours: {hours}. Address: {addr}."
+            _log_session(event, "fallback_hours", session_attrs, {"building": item.get("name")})
+            save_persistent_memory(user_id, session_attrs)
+            _append_turn_history(user_id, event, msg, session_attrs)
+            return close_intent(event, msg, session_attrs)
+
+    _log_session(event, "fallback", session_attrs)
+    save_persistent_memory(user_id, session_attrs)
+    _append_turn_history(user_id, event, "Sorry, I didn't understand that. You can ask about building hours, locations, or FAQs.", session_attrs)
+    return close_intent(event, "Sorry, I didn't understand that. You can ask about building hours, locations, or FAQs.", session_attrs)
