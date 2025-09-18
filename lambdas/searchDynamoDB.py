@@ -25,6 +25,19 @@ def lambda_handler(event, context):
                 "message": f"No entry found for '{resolved_value}' in {intent_name} table."
             }
 
+    # Call Bedrock Lambda
+    bedrock_payload = {
+        "question" = : user_input,
+        "result" : search_result
+    }
+    bedrock_response = lambda_client.invoke(
+        FunctionName="bedrockGenerate-dev-kyler",
+        InvocationType="RequestResponse",
+        Payload=json.dumps(bedrock_payload)
+    )
+    bedrock_result = json.loads(bedrock_response["Payload"].read())
+
+
     except Exception as e:
         result = {
             "status": "ERROR",
