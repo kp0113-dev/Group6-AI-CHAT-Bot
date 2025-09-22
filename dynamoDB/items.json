@@ -27,11 +27,4 @@
     "role": "viewer",
     "createdAt": "2025-09-22T10:10:00Z"
   }
-  {
-    "id": "user-005",
-    "name": "Kamil",
-    "email": "Kamil@example.com",
-    "role": "viewer",
-    "createdAt": "2025-09-22T10:10:00Z"
-  }
 ]
