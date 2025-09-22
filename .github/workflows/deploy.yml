@@ -63,15 +63,14 @@ jobs:
           done
 
       # ------------------ DYNAMODB ------------------
-      - name: Check if DynamoDB files changed
+      - name: Check if items.json changed
         id: changed
         run: |
-          if git diff --name-only HEAD^ HEAD | grep -E "dynamoDB/(items\.json|table-template\.json)"; then
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "dynamoDB/items.json"; then
             echo "changed=true" >> $GITHUB_ENV
           else
             echo "changed=false" >> $GITHUB_ENV
           fi
-
 
       - name: Install Python deps
         if: env.changed == 'true'
