@@ -123,6 +123,11 @@ Resources:
           TABLE_CONVERSATIONS: !Ref ConversationsTable
           S3_BUCKET_FAQS: !Ref FaqsBucket
           BEDROCK_MODEL_ID: ""  # fill when you enable Bedrock
+          HOURS_FUNCTION_NAME: !Ref HoursFunction
+          LOCATION_FUNCTION_NAME: !Ref LocationFunction
+          SCHEDULE_FUNCTION_NAME: !Ref ScheduleFunction
+          INSTRUCTOR_FUNCTION_NAME: !Ref InstructorFunction
+          FAQ_FUNCTION_NAME: !Ref FAQFunction
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -149,6 +154,16 @@ Resources:
               Action:
                 - bedrock:InvokeModel
               Resource: "*"
+            # Allow router to invoke worker lambdas
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource:
+                - !GetAtt HoursFunction.Arn
+                - !GetAtt LocationFunction.Arn
+                - !GetAtt ScheduleFunction.Arn
+                - !GetAtt InstructorFunction.Arn
+                - !GetAtt FAQFunction.Arn
       Events:
         # Example API event to allow test via API Gateway if needed later
         ApiEvent:
@@ -156,6 +171,114 @@ Resources:
           Properties:
             Path: /ping
             Method: get
+
+  # Worker functions (smaller, intent-focused lambdas)
+  HoursFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectPrefix}-${Stage}-hours"
+      Handler: charger_gpt/workers/hours.lambda_handler
+      CodeUri: lambdas/
+      Environment:
+        Variables:
+          TABLE_BUILDINGS: !Ref BuildingsTable
+          S3_BUCKET_FAQS: !Ref FaqsBucket
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+                - s3:GetObject
+                - s3:ListBucket
+              Resource:
+                - !GetAtt BuildingsTable.Arn
+                - !Sub "arn:aws:s3:::${FaqsBucket}"
+                - !Sub "arn:aws:s3:::${FaqsBucket}/*"
+
+  LocationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectPrefix}-${Stage}-location"
+      Handler: charger_gpt/workers/location.lambda_handler
+      CodeUri: lambdas/
+      Environment:
+        Variables:
+          TABLE_BUILDINGS: !Ref BuildingsTable
+          S3_BUCKET_FAQS: !Ref FaqsBucket
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+                - s3:GetObject
+                - s3:ListBucket
+              Resource:
+                - !GetAtt BuildingsTable.Arn
+                - !Sub "arn:aws:s3:::${FaqsBucket}"
+                - !Sub "arn:aws:s3:::${FaqsBucket}/*"
+
+  ScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectPrefix}-${Stage}-schedule"
+      Handler: charger_gpt/workers/schedule.lambda_handler
+      CodeUri: lambdas/
+      Environment:
+        Variables:
+          TABLE_SCHEDULES: !Ref SchedulesTable
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+              Resource:
+                - !GetAtt SchedulesTable.Arn
+
+  InstructorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectPrefix}-${Stage}-instructor"
+      Handler: charger_gpt/workers/instructor.lambda_handler
+      CodeUri: lambdas/
+      Environment:
+        Variables:
+          TABLE_INSTRUCTORS: !Ref InstructorsTable
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !GetAtt InstructorsTable.Arn
+
+  FAQFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectPrefix}-${Stage}-faq"
+      Handler: charger_gpt/workers/faq.lambda_handler
+      CodeUri: lambdas/
+      Environment:
+        Variables:
+          S3_BUCKET_FAQS: !Ref FaqsBucket
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:ListBucket
+              Resource:
+                - !Sub "arn:aws:s3:::${FaqsBucket}"
+                - !Sub "arn:aws:s3:::${FaqsBucket}/*"
 
 Outputs:
   FunctionName:
