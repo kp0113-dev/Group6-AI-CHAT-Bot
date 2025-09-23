@@ -16,6 +16,9 @@ Globals:
         S3_BUILDINGS_KEY: data/buildings.json
         S3_SCHEDULES_KEY: data/schedules.json
         S3_INSTRUCTORS_KEY: data/instructors.json
+        FEATURE_CONVO_HISTORY: 'true'
+        S3_NLU_RULES_KEY: config/nlu_rules.json
+        CONVERSATIONS_TTL_DAYS: '30'
 Parameters:
   ProjectPrefix:
     Type: String
@@ -82,6 +85,27 @@ Resources:
         KeyType: HASH
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+  ConversationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: ${ProjectPrefix}-${Stage}-conversations
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: user_id
+        AttributeType: S
+      - AttributeName: memory_key
+        AttributeType: S
+      KeySchema:
+      - AttributeName: user_id
+        KeyType: HASH
+      - AttributeName: memory_key
+        KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
   ChargerGPTFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -97,6 +121,8 @@ Resources:
             Ref: SchedulesTable
           TABLE_INSTRUCTORS:
             Ref: InstructorsTable
+          TABLE_CONVERSATIONS:
+            Ref: ConversationsTable
           S3_BUCKET_FAQS:
             Ref: FaqsBucket
           BEDROCK_MODEL_ID: ''
@@ -108,6 +134,7 @@ Resources:
           - dynamodb:GetItem
           - dynamodb:Query
           - dynamodb:Scan
+          - dynamodb:PutItem
           Resource:
           - Fn::GetAtt:
             - BuildingsTable
@@ -117,6 +144,9 @@ Resources:
             - Arn
           - Fn::GetAtt:
             - InstructorsTable
+            - Arn
+          - Fn::GetAtt:
+            - ConversationsTable
             - Arn
         - Effect: Allow
           Action:
@@ -150,6 +180,9 @@ Outputs:
   InstructorsTableName:
     Value:
       Ref: InstructorsTable
+  ConversationsTableName:
+    Value:
+      Ref: ConversationsTable
   FaqsBucketName:
     Value:
       Ref: FaqsBucket

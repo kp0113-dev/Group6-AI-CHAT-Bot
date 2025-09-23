@@ -15,6 +15,23 @@ from .utils import (
     get_slots_v2,
     get_session_attrs,
 )
+from . import config as cfg
+from .memory import (
+    get_user_id as mem_get_user_id,
+    load_persistent_memory as mem_load,
+    save_persistent_memory as mem_save,
+    append_turn_history as mem_append,
+)
+from .nlu import (
+    infer_intent_from_rules as nlu_infer,
+    looks_like_hours_query as nlu_looks_hours,
+    looks_like_location_query as nlu_looks_location,
+    looks_like_schedule_query as nlu_looks_schedule,
+    looks_like_instructor_query as nlu_looks_instructor,
+    resolve_building_reference as nlu_resolve_building,
+    resolve_course_reference as nlu_resolve_course,
+)
+from .data_access import find_building as da_find_building
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger()
@@ -98,24 +115,7 @@ PRONOUNS_COURSE = {"it", "that", "this", "the course", "the class"}
 
 
 def _resolve_building_reference(candidate: Optional[str], transcript: str, session_attrs: Dict[str, str]) -> Optional[str]:
-    """Resolve building name using slot candidate, transcript text, and prior memory.
-    If the candidate is a pronoun (e.g., 'it'), use last_building_name from session attrs.
-    """
-    cand = (candidate or "").strip()
-    if cand:
-        # If it's a pronoun, try memory
-        if _normalize(cand) in PRONOUNS_BUILDING:
-            remembered = session_attrs.get("last_building_name")
-            return remembered or cand
-        return cand
-
-    # No slot captured; try transcript words for a pronoun
-    t = _normalize(transcript)
-    if any(p in t.split() for p in PRONOUNS_BUILDING):
-        remembered = session_attrs.get("last_building_name")
-        if remembered:
-            return remembered
-    return cand or None
+    return nlu_resolve_building(candidate, transcript, session_attrs)
 
 
 def _normalize_course_code(text: Optional[str]) -> str:
@@ -125,18 +125,7 @@ def _normalize_course_code(text: Optional[str]) -> str:
 
 
 def _resolve_course_reference(candidate: Optional[str], transcript: str, session_attrs: Dict[str, str]) -> Optional[str]:
-    cand = (candidate or "").strip()
-    if cand:
-        if _normalize(cand) in PRONOUNS_COURSE:
-            remembered = session_attrs.get("last_course_code")
-            return remembered or cand
-        return _normalize_course_code(cand)
-    t = _normalize(transcript)
-    if any(p in t.split() for p in PRONOUNS_COURSE):
-        remembered = session_attrs.get("last_course_code")
-        if remembered:
-            return remembered
-    return None
+    return nlu_resolve_course(candidate, transcript, session_attrs)
 
 
 def _load_nlu_rules() -> Dict[str, Any]:
@@ -155,74 +144,29 @@ def _load_nlu_rules() -> Dict[str, Any]:
 
 
 def infer_intent_from_rules(text: str) -> Optional[str]:
-    """Infer a Lex intent name from incomplete phrases using simple rules.
-    Rules are optionally loaded from S3 (S3_NLU_RULES_KEY) and can specify
-    keyword lists mapping to target intents. We also include built-in defaults.
-    """
-    t = _normalize(text)
-    rules = _load_nlu_rules()
-    try:
-        for rule in rules.get("rules", []):
-            kws = [k.lower() for k in rule.get("keywords", [])]
-            if kws and all(k in t for k in kws):
-                return rule.get("intent")
-    except Exception:
-        pass
-    # Built-in fallbacks
-    if t.startswith("where is") or t.startswith("where's") or t.startswith("where is the"):
-        return "GetCampusLocationIntent"
-    if _looks_like_hours_query(t):
-        return "GetBuildingHoursIntent"
-    return None
+    # Delegate to NLU module
+    return nlu_infer(text)
 
 
 def _append_turn_history(user_id: str, event: Dict[str, Any], response_message: str, session_attrs: Dict[str, str]) -> None:
-    if not (FEATURE_CONVO_HISTORY and TABLE_CONVERSATIONS):
-        return
-    try:
-        table = DDB.Table(TABLE_CONVERSATIONS)
-        import time
-        ts_ms = int(time.time() * 1000)
-        # TTL for turn history items only (context item is not TTL'd)
-        expires_at = int(time.time()) + (CONVERSATIONS_TTL_DAYS * 86400)
-        transcript = event.get("inputTranscript") or event.get("inputText") or ""
-        intent = get_intent_name_v2(event)
-        table.put_item(Item={
-            "user_id": user_id,
-            "memory_key": f"turn#{ts_ms}",
-            "data": json.dumps({
-                "user": transcript,
-                "assistant": response_message,
-                "intent": intent,
-                "session_attrs": session_attrs,
-            })[:35000],
-            "expires_at": expires_at,
-        })
-    except Exception as e:
-        logger.debug("_append_turn_history failed: %s", e)
+    # Delegate to memory module (handles TTL and structure)
+    mem_append(user_id, event, response_message, session_attrs)
 
 
 def _looks_like_hours_query(text: str) -> bool:
-    t = _normalize(text)
-    keywords = ("hours", "open", "opening", "close", "closing")
-    return any(k in t for k in keywords)
+    return nlu_looks_hours(text)
 
 
 def _looks_like_location_query(text: str) -> bool:
-    t = _normalize(text)
-    return t.startswith("where is") or t.startswith("where's") or ("location" in t)
+    return nlu_looks_location(text)
 
 
 def _looks_like_schedule_query(text: str) -> bool:
-    t = _normalize(text)
-    return (
-        (t.startswith("when is") or t.startswith("what time")) and ("class" in t or "it" in t or "schedule" in t)
-    ) or ("schedule" in t and ("for" in t or "of" in t))
+    return nlu_looks_schedule(text)
 
 
 def _looks_like_instructor_query(text: str) -> bool:
-    t = _normalize(text)
-    return ("who teaches" in t) or ("instructor" in t) or ("professor" in t) or ("teacher" in t)
+    return nlu_looks_instructor(text)
 
 
 def _extract_building_from_text(text: str) -> Optional[str]:
@@ -235,45 +179,18 @@ def _extract_building_from_text(text: str) -> Optional[str]:
 
 
 def _get_user_id(event: Dict[str, Any]) -> str:
-    # Best effort: Lex V2 often provides sessionId; fall back to DEFAULT_STUDENT_ID
-    return (
-        event.get("sessionId")
-        or event.get("userId")
-        or event.get("sessionState", {}).get("userId")
-        or DEFAULT_STUDENT_ID
-    )
+    # Delegate to memory module helper
+    return mem_get_user_id(event)
 
 
 def load_persistent_memory(user_id: str) -> Dict[str, str]:
-    if not TABLE_CONVERSATIONS:
-        return {}
-    table = DDB.Table(TABLE_CONVERSATIONS)
-    try:
-        resp = table.get_item(Key={"user_id": user_id, "memory_key": "context"})
-        item = resp.get("Item")
-        if not item:
-            return {}
-        raw = item.get("data") or "{}"
-        if isinstance(raw, str):
-            return json.loads(raw)
-        return raw if isinstance(raw, dict) else {}
-    except Exception as e:
-        logger.warning("load_persistent_memory failed: %s", e)
-        return {}
+    # Delegate to memory module
+    return mem_load(user_id)
 
 
 def save_persistent_memory(user_id: str, session_attrs: Dict[str, str]) -> None:
-    if not TABLE_CONVERSATIONS:
-        return
-    table = DDB.Table(TABLE_CONVERSATIONS)
-    try:
-        table.put_item(Item={
-            "user_id": user_id,
-            "memory_key": "context",
-            "data": json.dumps(session_attrs)[:35000],  # guard size
-        })
-    except Exception as e:
-        logger.warning("save_persistent_memory failed: %s", e)
+    # Delegate to memory module
+    mem_save(user_id, session_attrs)
 
 
 def _log_session(event: Dict[str, Any], action: str, session_attrs: Dict[str, str], extra: Optional[Dict[str, Any]] = None) -> None:
@@ -389,11 +306,8 @@ def _invoke_bedrock(prompt: str) -> Optional[str]:
 
 
 def find_building(building_query: str) -> Optional[dict]:
-    items = get_buildings_data()
-    for item in items:
-        if _is_building_match(item.get("name", ""), building_query):
-            return item
-    return None
+    # Delegate to data_access module
+    return da_find_building(building_query)
 
 
 def handle_building_hours(building_name: str) -> str:
