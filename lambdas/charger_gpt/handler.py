@@ -33,7 +33,7 @@ from .nlu import (
     resolve_pronoun_referent as nlu_resolve_referent,
     is_valid_course_code as nlu_is_valid_course,
 )
-from .data_access import find_building as da_find_building
+from .data_access import find_building as da_find_building, get_buildings as da_get_buildings
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logger = logging.getLogger()
@@ -65,25 +65,13 @@ SCHEDULE_FUNCTION_NAME = os.getenv("SCHEDULE_FUNCTION_NAME")
 INSTRUCTOR_FUNCTION_NAME = os.getenv("INSTRUCTOR_FUNCTION_NAME")
 FAQ_FUNCTION_NAME = os.getenv("FAQ_FUNCTION_NAME")
 
-# Cache FAQs on cold start
-_FAQS_CACHE: Optional[Dict[str, Any]] = None
-_DATA_CACHE: Dict[str, Any] = {}
+# NLU rules cache
 _NLU_RULES: Optional[Dict[str, Any]] = None
 
 
 def _load_faqs() -> Dict[str, Any]:
-    global _FAQS_CACHE
-    if _FAQS_CACHE is not None:
-        return _FAQS_CACHE
-    try:
-        obj = S3.get_object(Bucket=S3_BUCKET_FAQS, Key="faqs/faqs.json")
-        body = obj["Body"].read().decode("utf-8")
-        data = json.loads(body)
-        _FAQS_CACHE = data
-        return data
-    except ClientError as e:
-        logger.exception("Failed to load FAQs from S3: %s", e)
-        return {"faqs": []}
+    # Deprecated in favor of FAQ worker
+    return {"faqs": []}
 
 
 def _normalize(text: Optional[str]) -> str:
@@ -194,7 +182,7 @@ def _mentions_building_keyword(text: str) -> bool:
 
 def _extract_building_from_text(text: str) -> Optional[str]:
     t = _normalize(text)
-    for item in get_buildings_data():
+    for item in da_get_buildings():
         name = item.get("name", "")
         if _is_building_match(name, t):
             return item.get("name")
@@ -241,52 +229,18 @@ def _load_json_from_s3(key: str) -> Any:
 
 
 def get_buildings_data() -> list:
-    if FEATURE_S3_DATA:
-        cache_key = "buildings"
-        if cache_key not in _DATA_CACHE:
-            data = _load_json_from_s3(S3_BUILDINGS_KEY) or []
-            _DATA_CACHE[cache_key] = data
-        return _DATA_CACHE.get(cache_key, [])
-    # Fallback to DynamoDB
-    table = DDB.Table(TABLE_BUILDINGS)
-    resp = table.scan()
-    return resp.get("Items", [])
+    # Deprecated in favor of data_access.get_buildings
+    return da_get_buildings()
 
 
 def get_schedules_data(student_id: str) -> list:
-    if FEATURE_S3_DATA:
-        cache_key = f"schedules:{student_id}"
-        if cache_key not in _DATA_CACHE:
-            data = _load_json_from_s3(S3_SCHEDULES_KEY) or []
-            # filter by student_id
-            _DATA_CACHE[cache_key] = [x for x in data if _normalize(x.get("student_id")) == _normalize(student_id)]
-        return _DATA_CACHE.get(cache_key, [])
-    # DynamoDB
-    table = DDB.Table(TABLE_SCHEDULES)
-    # Using GetItem in original code; here allow simple scan for MVP if Query not available due to lack of GSI
-    # But we can still get-item because PK/SK are known.
-    # We'll query each course as needed, so return empty here.
+    # Deprecated in favor of Schedule worker
     return []
 
 
 def get_instructor_data(course_code: str) -> Optional[dict]:
-    if FEATURE_S3_DATA:
-        cache_key = "instructors"
-        if cache_key not in _DATA_CACHE:
-            data = _load_json_from_s3(S3_INSTRUCTORS_KEY) or []
-            _DATA_CACHE[cache_key] = data
-        for it in _DATA_CACHE.get(cache_key, []):
-            if _normalize(it.get("course_code")) == _normalize(course_code):
-                return it
-        return None
-    # DynamoDB
-    table = DDB.Table(TABLE_INSTRUCTORS)
-    try:
-        resp = table.get_item(Key={"course_code": course_code.upper()})
-        return resp.get("Item")
-    except ClientError as e:
-        logger.exception("DynamoDB error: %s", e)
-        return None
+    # Deprecated in favor of Instructor worker
+    return None
 
 
 def _invoke_bedrock(prompt: str) -> Optional[str]:
@@ -369,84 +323,28 @@ def find_building(building_query: str) -> Optional[dict]:
 
 
 def handle_building_hours(building_name: str) -> str:
-    item = find_building(building_name)
-    if item:
-        hours = item.get("hours", "Hours not available")
-        addr = item.get("address", "Address not available")
-        return f"{item.get('name')} hours: {hours}. Address: {addr}."
-    return "I couldn't find that building. Try asking 'What are the hours for the library?'"
+    # Deprecated in favor of Hours worker
+    return ""
 
 
 def handle_building_location(building_name: str) -> str:
-    item = find_building(building_name)
-    if item:
-        addr = item.get("address", "Address not available")
-        lat = item.get("lat")
-        lon = item.get("lon")
-        if lat is not None and lon is not None:
-            return f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
-        return f"{item.get('name')} is at {addr}."
-    return "I couldn't find that building. Try 'Where is the engineering building?'"
+    # Deprecated in favor of Location worker
+    return ""
 
 
 def handle_faq(topic: str) -> str:
-    faqs = _load_faqs().get("faqs", [])
-    tnorm = _normalize(topic)
-    # simple keyword search
-    for faq in faqs:
-        q = _normalize(faq.get("question"))
-        if tnorm in q or any(tnorm in _normalize(k) for k in faq.get("keywords", [])):
-            return faq.get("answer", "I don't have an answer yet.")
-
-    # Fallback if Bedrock is enabled later
-    if FEATURE_BEDROCK and BEDROCK_MODEL_ID:
-        # Provide some lightweight context from known FAQs
-        examples = "\n".join([f"Q: {f.get('question')}\nA: {f.get('answer')}" for f in faqs[:3]])
-        prompt = (
-            "You are ChargerGPT, a helpful assistant for The University of Alabama in Huntsville (UAH).\n"
-            "Answer concisely based on campus context. If unsure, say you don't know.\n\n"
-            f"User question: {topic}\n\n"
-            f"Relevant examples (may be helpful, but not exhaustive):\n{examples}\n"
-        )
-        gen = _invoke_bedrock(prompt)
-        if gen:
-            return gen.strip()
-        return "I couldn't find that in my FAQs yet. Please try a different phrase or ask about buildings or hours."
-
-    return (
-        "I couldn't find that in my FAQs yet. Please try a different phrase or ask about buildings or hours."
-    )
+    # Deprecated in favor of FAQ worker
+    return ""
 
 
 def handle_class_schedule(student_id: str, course_code: str) -> str:
-    table = DDB.Table(TABLE_SCHEDULES)
-    try:
-        resp = table.get_item(Key={"student_id": student_id, "course_code": course_code.upper()})
-        item = resp.get("Item")
-        if not item:
-            return "I couldn't find that class in your schedule."
-        location = item.get("location", "TBD")
-        time = item.get("time", "TBD")
-        building = item.get("building", "")
-        return f"{course_code.upper()} meets at {time} in {building} ({location})."
-    except ClientError as e:
-        logger.exception("DynamoDB error: %s", e)
-        return "There was a problem looking up your schedule. Please try again."
+    # Deprecated in favor of Schedule worker
+    return ""
 
 
 def handle_instructor_lookup(course_code: str) -> str:
-    item = get_instructor_data(course_code)
-    if not item:
-        return "I couldn't find the instructor for that course."
-    name = item.get("instructor_name", "Unknown")
-    email = item.get("email", "")
-    office = item.get("office", "")
-    parts = [f"{course_code.upper()} is taught by {name}"]
-    if email:
-        parts.append(f"(email: {email})")
-    if office:
-        parts.append(f"office: {office}")
-    return ", ".join(parts) + "."
+    # Deprecated in favor of Instructor worker
+    return ""
 
 
 # Lex V2 event router
