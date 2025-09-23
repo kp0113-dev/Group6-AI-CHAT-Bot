@@ -15,14 +15,7 @@
   },
   {
     "id": "user-003",
-    "name": "Charlie",
-    "email": "charlie@example.com",
-    "role": "viewer",
-    "createdAt": "2025-09-22T10:10:00Z"
-  },
-  {
-    "id": "user-004",
-    "name": "Test",
+    "name": "Kamil",
     "email": "charlie@example.com",
     "role": "viewer",
     "createdAt": "2025-09-22T10:10:00Z"
