@@ -171,6 +171,21 @@ def _looks_like_instructor_query(text: str) -> bool:
     return nlu_looks_instructor(text)
 
 
+def _mentions_building_keyword(text: str) -> bool:
+    t = _normalize(text)
+    keywords = (
+        "building",
+        "hall",
+        "center",
+        "library",
+        "gym",
+        "union",
+        "auditorium",
+        "lab",
+    )
+    return any(k in t for k in keywords)
+
+
 def _extract_building_from_text(text: str) -> Optional[str]:
     t = _normalize(text)
     for item in get_buildings_data():
@@ -417,12 +432,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if any(p in tnorm.split() for p in ("it", "that", "this")) or _looks_like_hours_query(tnorm) or _looks_like_location_query(tnorm) or _looks_like_schedule_query(tnorm) or _looks_like_instructor_query(tnorm):
         referent = nlu_resolve_referent(transcript, session_attrs)
         if referent == "building":
-            # Prefer explicit building mentioned in this utterance; fallback to memory
-            bname = _extract_building_from_text(transcript) or session_attrs.get("last_building_name")
-            if bname:
-                item = find_building(bname)
+            # 1) If the user explicitly mentioned a building, try to use it first.
+            explicit = _extract_building_from_text(transcript)
+            if explicit:
+                item = find_building(explicit)
                 if item:
-                    # Prefer hours if explicitly asked, else location
                     if _looks_like_hours_query(transcript):
                         hours = item.get("hours", "Hours not available")
                         addr = item.get("address", "Address not available")
@@ -442,6 +456,36 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             msg = f"{item.get('name')} is at {addr}."
                         session_attrs.update({"last_building_name": item.get("name", ""), "last_intent": "GetCampusLocationIntent"})
                         _log_session(event, "pronoun_first_location", session_attrs, {"building": item.get("name")})
+                        save_persistent_memory(user_id, session_attrs)
+                        _append_turn_history(user_id, event, msg, session_attrs)
+                        return close_intent(event, msg, session_attrs)
+            # 2) If user mentioned a building keyword but we couldn't resolve, elicit instead of falling back.
+            if _mentions_building_keyword(transcript):
+                return elicit_slot(event, "BuildingName", "Which building do you mean?", session_attrs)
+            # 3) Otherwise, fall back to memory if available.
+            bname_mem = session_attrs.get("last_building_name")
+            if bname_mem:
+                item = find_building(bname_mem)
+                if item:
+                    if _looks_like_hours_query(transcript):
+                        hours = item.get("hours", "Hours not available")
+                        addr = item.get("address", "Address not available")
+                        msg = f"{item.get('name')} hours: {hours}. Address: {addr}."
+                        session_attrs.update({"last_building_name": item.get("name", ""), "last_intent": "GetBuildingHoursIntent"})
+                        _log_session(event, "pronoun_first_hours_mem", session_attrs, {"building": item.get("name")})
+                        save_persistent_memory(user_id, session_attrs)
+                        _append_turn_history(user_id, event, msg, session_attrs)
+                        return close_intent(event, msg, session_attrs)
+                    else:
+                        addr = item.get("address", "Address not available")
+                        lat = item.get("lat")
+                        lon = item.get("lon")
+                        if lat is not None and lon is not None:
+                            msg = f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
+                        else:
+                            msg = f"{item.get('name')} is at {addr}."
+                        session_attrs.update({"last_building_name": item.get("name", ""), "last_intent": "GetCampusLocationIntent"})
+                        _log_session(event, "pronoun_first_location_mem", session_attrs, {"building": item.get("name")})
                         save_persistent_memory(user_id, session_attrs)
                         _append_turn_history(user_id, event, msg, session_attrs)
                         return close_intent(event, msg, session_attrs)
@@ -491,6 +535,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             save_persistent_memory(user_id, session_attrs)
             _append_turn_history(user_id, event, msg, session_attrs)
             return close_intent(event, msg, session_attrs)
+        # If the utterance looks like a building mention, elicit slot instead of falling back
+        if _mentions_building_keyword(transcript):
+            _log_session(event, "building_hours_elicit_after_unmatched", session_attrs, {"query": building_name})
+            return elicit_slot(event, "BuildingName", "Which building do you mean?", session_attrs)
         _log_session(event, "building_hours_not_found", session_attrs, {"query": building_name})
         save_persistent_memory(user_id, session_attrs)
         _append_turn_history(user_id, event, "I couldn't find that building. Try asking 'What are the hours for the library?'", session_attrs)
@@ -521,6 +569,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             else:
                 msg = f"{item.get('name')} is at {addr}."
             return close_intent(event, msg, session_attrs)
+        # If the utterance looks like a building mention, elicit slot instead of falling back
+        if _mentions_building_keyword(transcript):
+            _log_session(event, "building_location_elicit_after_unmatched", session_attrs, {"query": building_name})
+            return elicit_slot(event, "BuildingName", "Which building do you mean?", session_attrs)
         _log_session(event, "building_location_not_found", session_attrs, {"query": building_name})
         save_persistent_memory(user_id, session_attrs)
         _append_turn_history(user_id, event, "I couldn't find that building. Try 'Where is the engineering building?'", session_attrs)
