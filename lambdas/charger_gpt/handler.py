@@ -417,7 +417,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if any(p in tnorm.split() for p in ("it", "that", "this")) or _looks_like_hours_query(tnorm) or _looks_like_location_query(tnorm) or _looks_like_schedule_query(tnorm) or _looks_like_instructor_query(tnorm):
         referent = nlu_resolve_referent(transcript, session_attrs)
         if referent == "building":
-            bname = session_attrs.get("last_building_name") or _extract_building_from_text(transcript)
+            # Prefer explicit building mentioned in this utterance; fallback to memory
+            bname = _extract_building_from_text(transcript) or session_attrs.get("last_building_name")
             if bname:
                 item = find_building(bname)
                 if item:
@@ -468,7 +469,13 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     if intent_name == "GetBuildingHoursIntent":
         candidate = get_slot_value(slots, "BuildingName")
-        building_name = _resolve_building_reference(candidate, transcript, session_attrs) or transcript
+        # Try slot -> pronoun-memory -> extract from transcript -> fallback to whole transcript
+        building_name = (
+            _resolve_building_reference(candidate, transcript, session_attrs)
+            or _extract_building_from_text(transcript)
+            or candidate
+            or transcript
+        )
         if not building_name:
             return elicit_slot(event, "BuildingName", "Which building?", session_attrs)
         item = find_building(building_name)
@@ -491,7 +498,13 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     if intent_name == "GetCampusLocationIntent":
         candidate = get_slot_value(slots, "BuildingName")
-        building_name = _resolve_building_reference(candidate, transcript, session_attrs) or transcript
+        # Try slot -> pronoun-memory -> extract from transcript -> fallback to whole transcript
+        building_name = (
+            _resolve_building_reference(candidate, transcript, session_attrs)
+            or _extract_building_from_text(transcript)
+            or candidate
+            or transcript
+        )
         if not building_name:
             return elicit_slot(event, "BuildingName", "Which building?", session_attrs)
         item = find_building(building_name)
