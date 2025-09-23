@@ -65,11 +65,18 @@ jobs:
           done
 
       # ------------------ DYNAMODB ------------------
-      - name: Check if any DynamoDB files changed
-        id: changed
+      - name: Detect changed DynamoDB tables
+        id: detect
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^dynamoDB/"; then
+          # Find which dynamoDB/*/items.json or table-template.json changed
+          changed_dirs=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep -E '^dynamoDB/.+/(items\.json|table-template\.json)' \
+            | xargs -r -n1 dirname \
+            | sort -u)
+
+          if [ -n "$changed_dirs" ]; then
             echo "changed=true" >> $GITHUB_ENV
+            echo "changed_dirs=$changed_dirs" >> $GITHUB_ENV
           else
             echo "changed=false" >> $GITHUB_ENV
           fi
@@ -80,15 +87,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install boto3
 
-      - name: Deploy all DynamoDB tables
+      - name: Deploy only changed DynamoDB tables
         if: env.changed == 'true'
         run: |
-          for dir in dynamoDB/*; do
-            if [ -d "$dir" ]; then
-              echo "Deploying table in $dir"
-              python scripts/deploy_dynamodb.py \
-                --table-template "$dir/table-template.json" \
-                --items-file "$dir/items.json"
-            fi
+          for dir in $changed_dirs; do
+            echo "Deploying table in $dir"
+            python scripts/deploy_dynamodb.py \
+              --table-template "$dir/table-template.json" \
+              --items-file "$dir/items.json"
           done
+
 
