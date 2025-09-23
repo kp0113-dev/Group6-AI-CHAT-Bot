@@ -1,5 +1,6 @@
 import json
 from typing import Any, Dict, Optional
+import re
 
 import boto3
 from botocore.exceptions import ClientError
@@ -136,4 +137,47 @@ def infer_intent_from_rules(text: str) -> Optional[str]:
         return "GetCampusLocationIntent"
     if looks_like_hours_query(t):
         return "GetBuildingHoursIntent"
+    return None
+
+
+# --- Additional helpers for pronoun-first routing ---
+
+_COURSE_CODE_RE = re.compile(r"^[A-Za-z]{2,5}\s?-?\d{3}[A-Za-z]?$")
+
+
+def is_valid_course_code(text: Optional[str]) -> bool:
+    if not text:
+        return False
+    t = (text or "").strip()
+    # Accept common patterns like CS101, ECE-301, MATH 201
+    return bool(_COURSE_CODE_RE.match(t))
+
+
+def resolve_pronoun_referent(transcript: str, session_attrs: Dict[str, str]) -> Optional[str]:
+    """Decide if a pronoun like 'it' refers to a building or a course.
+    Heuristics:
+    - If looks like hours/location: prefer building (when memory exists).
+    - If looks like schedule/instructor: prefer course (when memory exists).
+    - Otherwise, prefer the last_intent's domain (building vs course) if available.
+    Returns: 'building', 'course', or None.
+    """
+    t = normalize(transcript)
+    has_building = bool(session_attrs.get("last_building_name"))
+    has_course = bool(session_attrs.get("last_course_code"))
+
+    # Strong signals from the current utterance
+    if looks_like_hours_query(t) or looks_like_location_query(t):
+        if has_building:
+            return "building"
+    if looks_like_schedule_query(t) or looks_like_instructor_query(t):
+        if has_course:
+            return "course"
+
+    # Fall back to last intent domain
+    last_intent = (session_attrs.get("last_intent") or "").strip()
+    if last_intent in {"GetBuildingHoursIntent", "GetCampusLocationIntent"} and has_building:
+        return "building"
+    if last_intent in {"GetClassScheduleIntent", "GetInstructorLookupIntent"} and has_course:
+        return "course"
+
     return None

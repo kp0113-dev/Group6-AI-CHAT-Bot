@@ -30,6 +30,8 @@ from .nlu import (
     looks_like_instructor_query as nlu_looks_instructor,
     resolve_building_reference as nlu_resolve_building,
     resolve_course_reference as nlu_resolve_course,
+    resolve_pronoun_referent as nlu_resolve_referent,
+    is_valid_course_code as nlu_is_valid_course,
 )
 from .data_access import find_building as da_find_building
 
@@ -410,6 +412,55 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         merged = {**persisted, **session_attrs}
         session_attrs = merged
 
+    # Pronoun-first routing: if the user likely refers to a previous subject, decide referent before intents
+    tnorm = _normalize(transcript)
+    if any(p in tnorm.split() for p in ("it", "that", "this")) or _looks_like_hours_query(tnorm) or _looks_like_location_query(tnorm) or _looks_like_schedule_query(tnorm) or _looks_like_instructor_query(tnorm):
+        referent = nlu_resolve_referent(transcript, session_attrs)
+        if referent == "building":
+            bname = session_attrs.get("last_building_name") or _extract_building_from_text(transcript)
+            if bname:
+                item = find_building(bname)
+                if item:
+                    # Prefer hours if explicitly asked, else location
+                    if _looks_like_hours_query(transcript):
+                        hours = item.get("hours", "Hours not available")
+                        addr = item.get("address", "Address not available")
+                        msg = f"{item.get('name')} hours: {hours}. Address: {addr}."
+                        session_attrs.update({"last_building_name": item.get("name", ""), "last_intent": "GetBuildingHoursIntent"})
+                        _log_session(event, "pronoun_first_hours", session_attrs, {"building": item.get("name")})
+                        save_persistent_memory(user_id, session_attrs)
+                        _append_turn_history(user_id, event, msg, session_attrs)
+                        return close_intent(event, msg, session_attrs)
+                    else:
+                        addr = item.get("address", "Address not available")
+                        lat = item.get("lat")
+                        lon = item.get("lon")
+                        if lat is not None and lon is not None:
+                            msg = f"{item.get('name')} is at {addr} (lat: {lat}, lon: {lon})."
+                        else:
+                            msg = f"{item.get('name')} is at {addr}."
+                        session_attrs.update({"last_building_name": item.get("name", ""), "last_intent": "GetCampusLocationIntent"})
+                        _log_session(event, "pronoun_first_location", session_attrs, {"building": item.get("name")})
+                        save_persistent_memory(user_id, session_attrs)
+                        _append_turn_history(user_id, event, msg, session_attrs)
+                        return close_intent(event, msg, session_attrs)
+        elif referent == "course":
+            lc = session_attrs.get("last_course_code")
+            if lc:
+                if _looks_like_schedule_query(transcript):
+                    student_id = DEFAULT_STUDENT_ID
+                    message = handle_class_schedule(student_id, lc)
+                    _log_session(event, "pronoun_first_schedule", session_attrs, {"course_code": lc})
+                    save_persistent_memory(user_id, session_attrs)
+                    _append_turn_history(user_id, event, message, session_attrs)
+                    return close_intent(event, message, session_attrs)
+                if _looks_like_instructor_query(transcript):
+                    message = handle_instructor_lookup(lc)
+                    _log_session(event, "pronoun_first_instructor", session_attrs, {"course_code": lc})
+                    save_persistent_memory(user_id, session_attrs)
+                    _append_turn_history(user_id, event, message, session_attrs)
+                    return close_intent(event, message, session_attrs)
+
     # Try rule-based inference for incomplete/ambiguous phrases
     inferred = infer_intent_from_rules(transcript)
     if inferred and (intent_name == "AMAZON.FallbackIntent" or intent_name not in {"GetBuildingHoursIntent","GetCampusLocationIntent","GetFAQIntent","GetClassScheduleIntent","GetInstructorLookupIntent"}):
@@ -479,8 +530,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             save_persistent_memory(user_id, session_attrs)
             return close_intent(event, "Class schedule feature is currently disabled.", session_attrs)
         course_code = get_slot_value(slots, "CourseCode")
-        # If CourseCode is a pronoun like "it", treat as missing
+        # If CourseCode is a pronoun or invalid (e.g., "library"), treat as missing
         if course_code and _normalize(course_code) in PRONOUNS_COURSE:
+            course_code = None
+        elif course_code and not nlu_is_valid_course(course_code):
             course_code = None
         if not course_code:
             # If user said something like "When is it open?" and Lex misrouted here,
@@ -526,8 +579,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             save_persistent_memory(user_id, session_attrs)
             return close_intent(event, "Instructor lookup feature is currently disabled.", session_attrs)
         course_code = get_slot_value(slots, "CourseCode")
-        # If CourseCode is a pronoun like "it", treat as missing and elicit
+        # If CourseCode is a pronoun or invalid, treat as missing and elicit
         if course_code and _normalize(course_code) in PRONOUNS_COURSE:
+            course_code = None
+        elif course_code and not nlu_is_valid_course(course_code):
             course_code = None
         if not course_code:
             return elicit_slot(event, "CourseCode", "Which course code? e.g., ECE301", session_attrs)
