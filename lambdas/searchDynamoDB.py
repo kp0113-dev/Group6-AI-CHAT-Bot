@@ -11,7 +11,7 @@ def lambda_handler(event, context):
     resolved_value = event["resolvedValue"]
 
     try:
-        table = dynamodb.Table(intent_name)  # Table name = intent name
+        table = dynamodb.Table(intent_name.split("-")[0])  # Table name = intent name
         response = table.get_item(Key={"locationName": resolved_value})
 
         if "Item" in response:
