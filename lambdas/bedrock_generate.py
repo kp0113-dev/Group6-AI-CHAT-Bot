@@ -2,11 +2,12 @@ import os
 import json
 import boto3
 
+# Use Jamba 1.5 Large by default
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "ai21.jamba-1-5-large-v1:0")
 bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 
 def _extract_answer(j):
-    """Extracts text from Jamba 1.5 Large responses."""
+    """Extract text from Jamba 1.5 Large responses."""
     if "choices" in j and isinstance(j["choices"], list):
         first = j["choices"][0]
         if "message" in first and "content" in first["message"]:
@@ -19,6 +20,7 @@ def lambda_handler(event, context):
     question = event.get("question", "")
     db_result = event.get("dbResult", {})
 
+    # Build context from DynamoDB result
     if db_result.get("status") == "FOUND":
         context_text = json.dumps(db_result["item"], indent=2)
     else:
