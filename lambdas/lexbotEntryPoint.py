@@ -7,7 +7,7 @@ def lambda_handler(event, context):
     # Debug log
     print("Received event:", json.dumps(event))
 
-    # User input
+    # Extract Lex event info
     user_input = event.get("inputTranscript", "")
     intent_name = event["sessionState"]["intent"]["name"]
     slots = event["sessionState"]["intent"].get("slots", {})
@@ -25,10 +25,11 @@ def lambda_handler(event, context):
             else:
                 resolved_value = slot_data["value"].get("interpretedValue")
 
+    # If no resolved value, fall back to session
     if resolved_value is None and "savedResolvedValue" in session_attrs:
         resolved_value = session_attrs["savedResolvedValue"]
 
-    # If still no value → delegate back to Lex
+    # If still no value, let Lex handle prompting
     if resolved_value is None:
         return {
             "sessionState": {
@@ -43,14 +44,26 @@ def lambda_handler(event, context):
         "resolvedValue": resolved_value,
         "question": user_input
     }
-    response = lambda_client.invoke(
-        FunctionName="searchDnyamoDB-dev-kyler",
-        InvocationType="RequestResponse",
-        Payload=json.dumps(payload)
-    )
-    search_result = json.loads(response["Payload"].read())
 
-    # Return final answer to Lex
+    try:
+        response = lambda_client.invoke(
+            FunctionName="searchDynamoDB-dev-kyler",  
+            InvocationType="RequestResponse",
+            Payload=json.dumps(payload)
+        )
+        search_result = json.loads(response["Payload"].read())
+    except Exception as e:
+        print("Error invoking Search Lambda:", str(e))
+        search_result = {"message": "There was an error looking up that location."}
+
+    # Always provide a safe message
+    message = (
+        search_result.get("answer")
+        or search_result.get("message")
+        or "I couldn’t find anything."
+    )
+
+    # Return final response to Lex
     return {
         "sessionState": {
             "sessionAttributes": session_attrs,
@@ -58,6 +71,6 @@ def lambda_handler(event, context):
             "intent": {"name": intent_name, "state": "Fulfilled"}
         },
         "messages": [
-            {"contentType": "PlainText", "content": search_result.get("answer", "I couldn’t find anything.")}
+            {"contentType": "PlainText", "content": message}
         ]
     }
