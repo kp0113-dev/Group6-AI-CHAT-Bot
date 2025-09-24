@@ -1,88 +1,53 @@
 import json
 import boto3
-from lambdas.heuristics.heuristics import can_reuse_subject
-
 
 lambda_client = boto3.client("lambda")
 
-
 def lambda_handler(event, context):
-    # Print statement for Debugging in CloudWatch
-    print("Received event:", json.dumps(event))
+    """ Entry Lambda: Handles Lex input and calls the Search Lambda """
+    print("Lex Event:", json.dumps(event))
 
-
-    # Get the user input text
-    user_input = event.get("inputTranscript", "")
-   
-    # Set default response
-    response_text = "Deafult Response"
-
-
-    # Get the current intent items
+    # Extract intent and slots
     intent_name = event["sessionState"]["intent"]["name"]
     slots = event["sessionState"]["intent"].get("slots", {})
     session_attrs = event["sessionState"].get("sessionAttributes", {})
-    resolved_value = None
-   
-    # Check if intent is fulfilled and check if slot has 'value'
-    # If slot value exists then set the resolved value
-    # If slot value exists but resolved value does not then default to interpreted value
-    for slot_name, slot_data in slots.items():
-        if slot_data and "value" in slot_data:
-            resolved_value_list = slot_data["value"].get("resolvedValues", [])
-            try:
-                resolved_value = resolved_value_list[0] # resolved_value returns as a list so pull the value from the first index
-                session_attrs["savedResolvedValue"] = resolved_value # update saved subject value
-            except IndexError:
-                resolved_value = slots["location"]["value"].get("interpretedValue")
-            print(f"Resolved value for {slot_name}: {resolved_value}")
 
+    # Get the slot value (interpretedValue is the raw text Lex captured)
+    location_value = None
+    if slots.get("location") and "value" in slots["location"]:
+        location_value = slots["location"]["value"].get("interpretedValue")
 
-    # Return back to Lex and invoke slot prompt asking user to specify slot value
-    if resolved_value is None:
-        if can_reuse_subject(intent_name) and "savedResolvedValue" in session_attrs:
-            resolved_value = session_attrs["savedResolvedValue"]
-        else:
-            return {
-                "sessionState": {
-                    "dialogAction": {"type": "Delegate"},
-                    "intent": event["sessionState"]["intent"]
-                }
+    if not location_value:
+        # If Lex hasn’t captured a slot yet, delegate back
+        return {
+            "sessionState": {
+                "dialogAction": {"type": "Delegate"},
+                "intent": event["sessionState"]["intent"]
             }
-
-
-    if resolved_value is not None:
-        # Call searchDynamoDB Lambda
-        payload = {
-            "intentName": intent_name,
-            "resolvedValue": resolved_value
         }
-        response = lambda_client.invoke(
-            FunctionName="searchDynamoDB-prod",
-            InvocationType="RequestResponse",
-            Payload=json.dumps(payload)
-        )
-        search_result = json.loads(response["Payload"].read())
-        response_text = search_result.get("result", "No result returned.")
 
+    # Call the Search Lambda
+    payload = {
+        "intentName": intent_name,
+        "resolvedValue": location_value,
+        "question": event.get("inputTranscript", "")
+    }
 
-       
-    # MAIN RETURN RESPONSE
+    response = lambda_client.invoke(
+        FunctionName="searchDynamoDB-dev-kyler",   
+        InvocationType="RequestResponse",
+        Payload=json.dumps(payload)
+    )
+    search_result = json.loads(response["Payload"].read())
+
+    # Send Bedrock-generated answer back to Lex
     return {
         "sessionState": {
             "sessionAttributes": session_attrs,
-            "dialogAction": {
-                "type": "Close"   # End the conversation
-            },
-            "intent": {
-                "name": intent_name,
-                "state": "Fulfilled"
-            }
+            "dialogAction": {"type": "Close"},
+            "intent": {"name": intent_name, "state": "Fulfilled"}
         },
         "messages": [
-            {
-                "contentType": "PlainText",
-                "content": f"{response_text}"
-            }
+            {"contentType": "PlainText", "content": search_result.get("answer", "I couldn’t find anything.")}
         ]
     }
