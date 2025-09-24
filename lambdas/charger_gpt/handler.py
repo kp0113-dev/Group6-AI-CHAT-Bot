@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, Optional
 
 import boto3
@@ -32,6 +33,9 @@ from .nlu import (
     resolve_course_reference as nlu_resolve_course,
     resolve_pronoun_referent as nlu_resolve_referent,
     is_valid_course_code as nlu_is_valid_course,
+    normalize as nlu_normalize,
+    is_building_match as nlu_is_building_match,
+    PRONOUNS_COURSE,
 )
 from .data_access import find_building as da_find_building, get_buildings as da_get_buildings
 
@@ -65,49 +69,9 @@ SCHEDULE_FUNCTION_NAME = os.getenv("SCHEDULE_FUNCTION_NAME")
 INSTRUCTOR_FUNCTION_NAME = os.getenv("INSTRUCTOR_FUNCTION_NAME")
 FAQ_FUNCTION_NAME = os.getenv("FAQ_FUNCTION_NAME")
 
-# NLU rules cache
-_NLU_RULES: Optional[Dict[str, Any]] = None
-
-
 def _load_faqs() -> Dict[str, Any]:
     # Deprecated in favor of FAQ worker
     return {"faqs": []}
-
-
-def _normalize(text: Optional[str]) -> str:
-    return (text or "").strip().lower()
-
-
-def _normalize_building(text: Optional[str]) -> str:
-    t = _normalize(text)
-    # Remove leading articles
-    for prefix in ("the ", "a ", "an "):
-        if t.startswith(prefix):
-            t = t[len(prefix):]
-            break
-    # Remove common suffixes
-    for suffix in (" building", " hall"):
-        if t.endswith(suffix):
-            t = t[: -len(suffix)]
-            break
-    # Collapse multiple spaces
-    t = " ".join(t.split())
-    return t
-
-
-def _is_building_match(item_name: str, query: str) -> bool:
-    a = _normalize_building(item_name)
-    b = _normalize_building(query)
-    if not a or not b:
-        return False
-    if a == b:
-        return True
-    # Allow substring containment (e.g., 'library' vs 'm. louis salmon library')
-    return a in b or b in a
-
-
-PRONOUNS_BUILDING = {"it", "there", "that", "the building"}
-PRONOUNS_COURSE = {"it", "that", "this", "the course", "the class"}
 
 
 def _resolve_building_reference(candidate: Optional[str], transcript: str, session_attrs: Dict[str, str]) -> Optional[str]:
@@ -166,7 +130,7 @@ def _looks_like_instructor_query(text: str) -> bool:
 
 
 def _mentions_building_keyword(text: str) -> bool:
-    t = _normalize(text)
+    t = nlu_normalize(text)
     keywords = (
         "building",
         "hall",
@@ -181,12 +145,29 @@ def _mentions_building_keyword(text: str) -> bool:
 
 
 def _extract_building_from_text(text: str) -> Optional[str]:
-    t = _normalize(text)
+    t = nlu_normalize(text)
     for item in da_get_buildings():
         name = item.get("name", "")
-        if _is_building_match(name, t):
+        if nlu_is_building_match(name, t):
             return item.get("name")
     return None
+
+
+# Detect explicit course code in the current utterance
+_COURSE_CODE_INLINE_RE = re.compile(r"[A-Za-z]{2,5}\s?-?\d{3}[A-Za-z]?")
+
+
+def _has_explicit_course(text: str, course_slot_value: Optional[str]) -> bool:
+    if course_slot_value and nlu_is_valid_course(course_slot_value):
+        return True
+    if not text:
+        return False
+    # Find any plausible course tokens inline
+    matches = _COURSE_CODE_INLINE_RE.findall(text)
+    for m in matches:
+        if nlu_is_valid_course(m):
+            return True
+    return False
 
 
 def _get_user_id(event: Dict[str, Any]) -> str:
@@ -216,16 +197,6 @@ def _log_session(event: Dict[str, Any], action: str, session_attrs: Dict[str, st
         logger.info("session_state: %s", json.dumps(payload)[:8000])
     except Exception as e:
         logger.debug("_log_session failed: %s", e)
-
-
-def _load_json_from_s3(key: str) -> Any:
-    try:
-        obj = S3.get_object(Bucket=S3_BUCKET_FAQS, Key=key)
-        body = obj["Body"].read().decode("utf-8")
-        return json.loads(body)
-    except ClientError as e:
-        logger.error("Failed to load %s from S3 %s: %s", key, S3_BUCKET_FAQS, e)
-        return None
 
 
 def get_buildings_data() -> list:
@@ -367,8 +338,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         session_attrs = merged
 
     # Pronoun-first routing: if the user likely refers to a previous subject, decide referent before intents
-    tnorm = _normalize(transcript)
-    if any(p in tnorm.split() for p in ("it", "that", "this")) or _looks_like_hours_query(tnorm) or _looks_like_location_query(tnorm) or _looks_like_schedule_query(tnorm) or _looks_like_instructor_query(tnorm):
+    tnorm = nlu_normalize(transcript)
+    # Guard: if the utterance carries an explicit course code (or slot has one), skip pronoun-first routing
+    # to avoid falling back to building memory for queries like "Who teaches ECE301?"
+    explicit_course_present = _has_explicit_course(transcript, get_slot_value(slots, "CourseCode"))
+    if (not explicit_course_present) and (any(p in tnorm.split() for p in ("it", "that", "this")) or _looks_like_hours_query(tnorm) or _looks_like_location_query(tnorm) or _looks_like_schedule_query(tnorm) or _looks_like_instructor_query(tnorm)):
         referent = nlu_resolve_referent(transcript, session_attrs)
         if referent == "building":
             # 1) If the user explicitly mentioned a building, try to use it first.
