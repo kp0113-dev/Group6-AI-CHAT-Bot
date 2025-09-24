@@ -4,21 +4,32 @@ import boto3
 lambda_client = boto3.client("lambda")
 
 def lambda_handler(event, context):
-    """ Entry Lambda: Handles Lex input and calls the Search Lambda """
-    print("Lex Event:", json.dumps(event))
+    # Debug log
+    print("Received event:", json.dumps(event))
 
-    # Extract intent and slots
+    # User input
+    user_input = event.get("inputTranscript", "")
     intent_name = event["sessionState"]["intent"]["name"]
     slots = event["sessionState"]["intent"].get("slots", {})
     session_attrs = event["sessionState"].get("sessionAttributes", {})
 
-    # Get the slot value (interpretedValue is the raw text Lex captured)
-    location_value = None
-    if slots.get("location") and "value" in slots["location"]:
-        location_value = slots["location"]["value"].get("interpretedValue")
+    resolved_value = None
 
-    if not location_value:
-        # If Lex hasn’t captured a slot yet, delegate back
+    # Resolve slot values
+    for slot_name, slot_data in slots.items():
+        if slot_data and "value" in slot_data:
+            resolved_value_list = slot_data["value"].get("resolvedValues", [])
+            if resolved_value_list:
+                resolved_value = resolved_value_list[0]
+                session_attrs["savedResolvedValue"] = resolved_value
+            else:
+                resolved_value = slot_data["value"].get("interpretedValue")
+
+    if resolved_value is None and "savedResolvedValue" in session_attrs:
+        resolved_value = session_attrs["savedResolvedValue"]
+
+    # If still no value → delegate back to Lex
+    if resolved_value is None:
         return {
             "sessionState": {
                 "dialogAction": {"type": "Delegate"},
@@ -26,21 +37,20 @@ def lambda_handler(event, context):
             }
         }
 
-    # Call the Search Lambda
+    # Call Search Lambda
     payload = {
         "intentName": intent_name,
-        "resolvedValue": location_value,
-        "question": event.get("inputTranscript", "")
+        "resolvedValue": resolved_value,
+        "question": user_input
     }
-
     response = lambda_client.invoke(
-        FunctionName="searchDynamoDB-dev-kyler",   
+        FunctionName="searchDnyamoDB-dev-kyler",
         InvocationType="RequestResponse",
         Payload=json.dumps(payload)
     )
     search_result = json.loads(response["Payload"].read())
 
-    # Send Bedrock-generated answer back to Lex
+    # Return final answer to Lex
     return {
         "sessionState": {
             "sessionAttributes": session_attrs,
