@@ -5,7 +5,7 @@ from decimal import Decimal
 dynamodb = boto3.resource("dynamodb")
 lambda_client = boto3.client("lambda")
 
-# Convert Decimals to floats for JSON
+# Convert Decimals from DynamoDB to floats
 def convert_decimals(obj):
     if isinstance(obj, list):
         return [convert_decimals(i) for i in obj]
@@ -25,13 +25,13 @@ def lambda_handler(event, context):
         table = dynamodb.Table("GetLocation")
         print(f"Looking up locationName={resolved_value} in table {table.name}")
 
-        # Direct key lookup
+        # Try direct get_item lookup
         response = table.get_item(Key={"locationName": resolved_value})
         print("DynamoDB get_item response:", json.dumps(response, indent=2, default=str))
 
         item = response.get("Item")
 
-        # Fallback to scan if not found
+        # Fallback: scan and check case-insensitive matches
         if not item:
             print("get_item returned nothing, scanning table")
             scan_response = table.scan()
@@ -40,7 +40,7 @@ def lambda_handler(event, context):
                     item = candidate
                     break
 
-        # Build result
+        # Build db_result
         if item:
             item = convert_decimals(item)
             db_result = {"status": "FOUND", "item": item}
@@ -50,7 +50,7 @@ def lambda_handler(event, context):
         # Call Bedrock Lambda
         bedrock_payload = {"question": question, "dbResult": db_result}
         bedrock_response = lambda_client.invoke(
-            FunctionName="bedrock_generate-dev-kyler",
+            FunctionName="bedrock_generate-dev-kyler",  
             InvocationType="RequestResponse",
             Payload=json.dumps(bedrock_payload)
         )
@@ -59,3 +59,4 @@ def lambda_handler(event, context):
     except Exception as e:
         print("ERROR:", str(e))
         return {"status": "ERROR", "message": str(e)}
+
