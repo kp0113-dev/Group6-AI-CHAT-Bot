@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -61,3 +63,38 @@ jobs:
                 --zip-file fileb://"$zip_file"
             fi
           done
+
+      # ------------------ DYNAMODB ------------------
+      - name: Detect changed DynamoDB tables
+        id: detect
+        run: |
+          # Find which dynamoDB/*/items.json or table-template.json changed
+          changed_dirs=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep -E '^dynamoDB/.+/(items\.json|table-template\.json)' \
+            | xargs -r -n1 dirname \
+            | sort -u)
+
+          if [ -n "$changed_dirs" ]; then
+            echo "changed=true" >> $GITHUB_ENV
+            echo "changed_dirs=$changed_dirs" >> $GITHUB_ENV
+          else
+            echo "changed=false" >> $GITHUB_ENV
+          fi
+
+      - name: Install Python deps
+        if: env.changed == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3
+
+      - name: Deploy only changed DynamoDB tables
+        if: env.changed == 'true'
+        run: |
+          for dir in $changed_dirs; do
+            echo "Deploying table in $dir"
+            python scripts/deploy_dynamodb.py \
+              --table-template "$dir/table-template.json" \
+              --items-file "$dir/items.json"
+          done
+
+

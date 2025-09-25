@@ -1,7 +1,7 @@
 # Map of intents that allow reusing the last subject
 REUSE_LAST_SUBJECT = {
-    "GetTime": True,
-    "GetLocation": False,
+    "BuildingInfo-GetTime": True,
+    "BuildingInfo-GetLocation": True,
 }
 
 def can_reuse_subject(intent_name: str) -> bool:
