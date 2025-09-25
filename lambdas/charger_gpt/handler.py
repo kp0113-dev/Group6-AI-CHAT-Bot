@@ -22,6 +22,8 @@ from .memory import (
     load_persistent_memory as mem_load,
     save_persistent_memory as mem_save,
     append_turn_history as mem_append,
+    get_session_id as mem_get_session_id,
+    get_recent_turns as mem_get_recent_turns,
 )
 from .nlu import (
     infer_intent_from_rules as nlu_infer,
@@ -336,6 +338,26 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Do not overwrite current session fields if already present in this turn
         merged = {**persisted, **session_attrs}
         session_attrs = merged
+
+    # Load recent history for this session and attach a compact context string
+    try:
+        session_id = mem_get_session_id(event)
+        recent_items = mem_get_recent_turns(user_id, session_id, limit=6)
+        # Build a short transcript of the last few turns
+        pairs = []
+        for it in recent_items:
+            data = it.get("data") or {}
+            u = (data.get("user_input") or "").strip()
+            a = (data.get("assistant_response") or "").strip()
+            if u:
+                pairs.append(f"U: {u}")
+            if a:
+                pairs.append(f"A: {a}")
+        recent_context = "\n".join(pairs)[:2000]
+        if recent_context:
+            session_attrs["recent_context"] = recent_context
+    except Exception:
+        pass
 
     # Pronoun-first routing: if the user likely refers to a previous subject, decide referent before intents
     tnorm = nlu_normalize(transcript)

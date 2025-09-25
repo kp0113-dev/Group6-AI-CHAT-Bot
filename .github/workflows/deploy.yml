@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -20,27 +22,79 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Optional: set LAMBDA_FUNCTION_NAME at repo or org level (Settings > Variables)
-      # Defaults to 'chargergpt-dev-handler' if not provided
-      - name: Package and Deploy Lambda
+      - name: Set branch prefix
         run: |
-          set -euo pipefail
-          LAMBDA_FUNCTION_NAME="${LAMBDA_FUNCTION_NAME:-chargergpt-dev-handler}"
-          echo "Deploying function: ${LAMBDA_FUNCTION_NAME}"
-
-          # If repository contains a top-level 'chatbot' directory, enter it
-          if [ -d "chatbot/lambdas" ]; then
-            echo "Entering chatbot/ directory"
-            cd chatbot
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "branch_suffix=prod" >> $GITHUB_ENV
+          else
+            branch="${GITHUB_REF_NAME#dev-}" # strip "dev-"
+            echo "branch_suffix=dev-${branch}" >> $GITHUB_ENV
           fi
 
-          # Package: ensure the zip root contains the 'charger_gpt/' package
-          rm -f lambda.zip
-          cd lambdas
-          zip -r ../lambda.zip .
-          cd ..
+      - name: Deploy Lambdas
+        run: |
+          ROLE_ARN="arn:aws:iam::264483381689:role/github-lambdas"
 
-          # Update function code
-          aws lambda update-function-code \
-            --function-name "${LAMBDA_FUNCTION_NAME}" \
-            --zip-file fileb://lambda.zip
+          for file in lambdas/*.py; do
+            [[ "$file" != *.py ]] && continue
+
+            base_name="${file##*/}"
+            base_name="${base_name%.py}"
+            lambda_name="${base_name}-${branch_suffix}"
+
+            echo "Processing Lambda function: $lambda_name"
+
+            zip_file="${base_name}.zip"
+            zip -j "$zip_file" "$file"
+            zip -r "$zip_file" "$(dirname "$file")/heuristics"
+
+            if aws lambda get-function --function-name "$lambda_name" > /dev/null 2>&1; then
+              echo "Updating existing Lambda: $lambda_name"
+              aws lambda update-function-code \
+                --function-name "$lambda_name" \
+                --zip-file fileb://"$zip_file"
+            else
+              echo "Creating new Lambda: $lambda_name"
+              aws lambda create-function \
+                --function-name "$lambda_name" \
+                --runtime python3.11 \
+                --role "$ROLE_ARN" \
+                --handler "${base_name}.lambda_handler" \
+                --zip-file fileb://"$zip_file"
+            fi
+          done
+
+      # ------------------ DYNAMODB ------------------
+      - name: Detect changed DynamoDB tables
+        id: detect
+        run: |
+          # Find which dynamoDB/*/items.json or table-template.json changed
+          changed_dirs=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+            | grep -E '^dynamoDB/.+/(items\.json|table-template\.json)' \
+            | xargs -r -n1 dirname \
+            | sort -u)
+
+          if [ -n "$changed_dirs" ]; then
+            echo "changed=true" >> $GITHUB_ENV
+            echo "changed_dirs=$changed_dirs" >> $GITHUB_ENV
+          else
+            echo "changed=false" >> $GITHUB_ENV
+          fi
+
+      - name: Install Python deps
+        if: env.changed == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3
+
+      - name: Deploy only changed DynamoDB tables
+        if: env.changed == 'true'
+        run: |
+          for dir in $changed_dirs; do
+            echo "Deploying table in $dir"
+            python scripts/deploy_dynamodb.py \
+              --table-template "$dir/table-template.json" \
+              --items-file "$dir/items.json"
+          done
+
+
