@@ -28,15 +28,11 @@ def lambda_handler(event, context):
             )
             data = json.loads(bedrock_response["Payload"].read())
             result = data['answer']
-            print("Bedrock response:" + str(result))
-            return result
         else:
-            result = f"No entry found for '{resolved_value}' in {intent_name} table."
+            result = f"No data found for '{resolved_value}' in {intent_name} table."
 
     except Exception as e:
         result = f"Error querying DynamoDB: {str(e)}"
 
-    return {
-        "result": result
-    }
+    return result
     
