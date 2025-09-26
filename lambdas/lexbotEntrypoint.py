@@ -34,7 +34,8 @@ def lambda_handler(event, context):
                 resolved_value = resolved_value_list[0] # resolved_value returns as a list so pull the value from the first index
                 session_attrs["savedResolvedValue"] = resolved_value # update saved subject value
             except IndexError:
-                resolved_value = slots["location"]["value"].get("interpretedValue")
+                resolved_value = slots["location"]["value"].get("originalValue")
+                session_attrs["savedResolvedValue"] = resolved_value  # update saved subject value
             print(f"Resolved value for {slot_name}: {resolved_value}")
 
 

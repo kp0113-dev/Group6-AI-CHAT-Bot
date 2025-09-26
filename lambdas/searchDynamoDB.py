@@ -12,7 +12,7 @@ def lambda_handler(event, context):
 
     try:
         table = dynamodb.Table(intent_name.split("-")[0])  # Table name = (left side of -) ex. "BuildingInfo"-GetTime
-        response = table.get_item(Key={"locationName": resolved_value})
+        response = table.get_item(Key={"value": resolved_value})
 
         if "Item" in response:
             result = f"Found: {response['Item']}"
