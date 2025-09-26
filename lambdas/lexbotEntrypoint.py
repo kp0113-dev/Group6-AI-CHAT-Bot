@@ -51,12 +51,12 @@ def lambda_handler(event, context):
                 }
             }
 
-
     if resolved_value is not None:
         # Call searchDynamoDB Lambda
         payload = {
             "intentName": intent_name,
-            "resolvedValue": resolved_value
+            "resolvedValue": resolved_value,
+            "question": user_input
         }
         response = lambda_client.invoke(
             FunctionName="searchDynamoDB-dev-kamil",
@@ -64,7 +64,7 @@ def lambda_handler(event, context):
             Payload=json.dumps(payload)
         )
         search_result = json.loads(response["Payload"].read())
-        response_text = search_result.get("result", "No result returned.")
+        response_text = search_result
        
     # MAIN RETURN RESPONSE
     return {
