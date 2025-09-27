@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import difflib
 from typing import Any, Dict, Optional
 
 import boto3
@@ -143,7 +144,15 @@ def _mentions_building_keyword(text: str) -> bool:
         "auditorium",
         "lab",
     )
-    return any(k in t for k in keywords)
+    if any(k in t for k in keywords):
+        return True
+    # Fuzzy token check to catch common misspellings (e.g., "libary")
+    tokens = [w for w in re.split(r"[^a-z0-9]+", t) if w]
+    for tok in tokens:
+        for k in keywords:
+            if difflib.SequenceMatcher(None, tok, k).ratio() >= 0.8:
+                return True
+    return False
 
 
 def _extract_building_from_text(text: str) -> Optional[str]:
@@ -152,6 +161,18 @@ def _extract_building_from_text(text: str) -> Optional[str]:
         name = item.get("name", "")
         if nlu_is_building_match(name, t):
             return item.get("name")
+    # Fuzzy fallback: choose closest building name by similarity to the whole utterance
+    names = [item.get("name", "") for item in da_get_buildings()]
+    best_name = None
+    best_score = 0.0
+    for name in names:
+        nn = nlu_normalize(name)
+        score = difflib.SequenceMatcher(None, nn, t).ratio()
+        if score > best_score:
+            best_score = score
+            best_name = name
+    if best_name and best_score >= 0.78:
+        return best_name
     return None
 
 
@@ -511,7 +532,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return close_intent(event, "Class schedule feature is currently disabled.", session_attrs)
         course_code = get_slot_value(slots, "CourseCode")
         # If CourseCode is a pronoun or invalid (e.g., "library"), treat as missing
-        if course_code and _normalize(course_code) in PRONOUNS_COURSE:
+        if course_code and nlu_normalize(course_code) in PRONOUNS_COURSE:
             course_code = None
         elif course_code and not nlu_is_valid_course(course_code):
             course_code = None
@@ -574,6 +595,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         _append_turn_history(user_id, event, msg, session_attrs)
         return close_intent(event, msg, session_attrs)
 
+    # If user is asking a course question but we have no course context and no explicit course, elicit course code
+    if (_looks_like_instructor_query(tnorm) or _looks_like_schedule_query(tnorm)) and (not explicit_course_present) and (not session_attrs.get("last_course_code")):
+        return elicit_slot(event, "CourseCode", "Which course code? e.g., ECE301", session_attrs)
+
     # Fallback
     # Course follow-ups using remembered course when user asks generic questions
     if _looks_like_schedule_query(transcript) and session_attrs.get("last_course_code"):
@@ -615,6 +640,19 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         save_persistent_memory(user_id, session_attrs)
         _append_turn_history(user_id, event, msg, session_attrs)
         return close_intent(event, msg, session_attrs)
+
+    # Attempt FAQ resolution on fallback if possible
+    try:
+        w = _call_faq(transcript)
+        if isinstance(w, dict) and w.get("message") and not w.get("error"):
+            session_attrs.update((w.get("session_attrs") or {}))
+            msg = w.get("message", "")
+            _log_session(event, "fallback_faq", session_attrs, {"query": transcript[:100]})
+            save_persistent_memory(user_id, session_attrs)
+            _append_turn_history(user_id, event, msg, session_attrs)
+            return close_intent(event, msg, session_attrs)
+    except Exception:
+        pass
 
     _log_session(event, "fallback", session_attrs)
     save_persistent_memory(user_id, session_attrs)
