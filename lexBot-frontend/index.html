@@ -1,91 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>LexBot Chat</title>
+  <meta charset="utf-8"/>
+  <title>Lex Chat</title>
   <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1488.0.min.js"></script>
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      font-family: Arial, sans-serif;
-    }
-    #chat {
-      width: 400px;
-      border: 1px solid #ccc;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 2px 2px 10px #aaa;
-    }
-    #messages {
-      height: 300px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-      border: 1px solid #ddd;
-      padding: 10px;
-      border-radius: 5px;
-      background: #fafafa;
-    }
-    .user { color: blue; }
-    .bot { color: green; }
-  </style>
+  <style>/* your styles */</style>
 </head>
 <body>
   <div id="chat">
     <div id="messages"></div>
-    <input type="text" id="userInput" placeholder="Ask me something..." style="width: 100%; padding: 10px;">
+    <input id="userInput" placeholder="Ask something..." />
   </div>
 
+  <!-- Amplify will generate this at build time -->
+  <script src="env.js"></script>
+
   <script>
-    // Configure AWS SDK
-    AWS.config.region = "us-east-1"; // your bot's region
+    // Use values generated into env.js
+    const REGION   = window._env_.AWS_REGION;
+    const IDPOOL   = window._env_.IDENTITY_POOL_ID;
+    const BOT_ID   = window._env_.BOT_ID;
+    const BOT_ALIAS= window._env_.BOT_ALIAS_ID;
+    const LOCALE   = window._env_.LOCALE_ID || 'en_US';
+
+    AWS.config.region = REGION;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-      IdentityPoolId: "us-east-1:7f1450ca-d9b5-4b27-b01e-6a1f903e825f" // Cognito Identity Pool with Lex permissions
+      IdentityPoolId: IDPOOL
     });
 
     const lexruntime = new AWS.LexRuntimeV2();
 
-    const botId = "XQWRZASCZQ";       // From Lex console
-    const botAliasId = "GCHYSRUJZT"; // From Lex console
-    const localeId = "en_US";           // Depends on your bot
-    const sessionId = "user-" + Date.now();
+    const sessionId = 'user-' + Date.now();
 
-    document.getElementById("userInput").addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        const userText = e.target.value;
-        e.target.value = "";
-
-        addMessage("You: " + userText, "user");
+    document.getElementById('userInput').addEventListener('keypress', function(e){
+      if (e.key === 'Enter') {
+        const text = e.target.value;
+        e.target.value = '';
+        append('You: ' + text, 'user');
 
         const params = {
-          botId,
-          botAliasId,
-          localeId,
+          botId: BOT_ID,
+          botAliasId: BOT_ALIAS,
+          localeId: LOCALE,
           sessionId,
-          text: userText
+          text
         };
 
-        lexruntime.recognizeText(params, function(err, data) {
+        lexruntime.recognizeText(params, function(err, data){
           if (err) {
             console.error(err);
-            addMessage("Error: " + err.message, "bot");
+            append('Error: ' + (err.message || JSON.stringify(err)), 'bot');
           } else {
-            if (data.messages && data.messages.length > 0) {
-              addMessage("Bot: " + data.messages[0].content, "bot");
+            if (data.messages && data.messages.length) {
+              append('Bot: ' + data.messages.map(m => m.content).join(' '), 'bot');
+            } else {
+              append('Bot: (no message returned)', 'bot');
             }
           }
         });
       }
     });
 
-    function addMessage(text, type) {
-      const msgDiv = document.createElement("div");
-      msgDiv.textContent = text;
-      msgDiv.className = type;
-      document.getElementById("messages").appendChild(msgDiv);
+    function append(txt, cls){
+      const d = document.createElement('div'); d.className = cls; d.textContent = txt;
+      document.getElementById('messages').appendChild(d);
+      d.scrollIntoView();
     }
   </script>
 </body>
