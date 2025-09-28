@@ -1,15 +1,15 @@
 version: 1
 applications:
-  - appRoot: lexBot-frontend   # tells Amplify where the frontend lives
+  - appRoot: lexBot-frontend
     frontend:
       phases:
         preBuild:
           commands:
-            - echo "window._env_ = { 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'REGION': '$REGION', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > lexBot-frontend/env.js
+            - echo "window._env_ = { 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'REGION': '$REGION', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > env.js
         build:
           commands: []
       artifacts:
-        baseDirectory: .   # serve files from frontend root
+        baseDirectory: .   # serve files directly from lexBot-frontend
         files:
           - '**/*'
       cache:
