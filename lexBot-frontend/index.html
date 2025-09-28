@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LexBot Chat</title>
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1488.0.min.js"></script>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    #chat {
+      width: 400px;
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 2px 2px 10px #aaa;
+    }
+    #messages {
+      height: 300px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      background: #fafafa;
+    }
+    .user { color: blue; }
+    .bot { color: green; }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <div id="messages"></div>
+    <input type="text" id="userInput" placeholder="Ask me something..." style="width: 100%; padding: 10px;">
+  </div>
+
+  <script>
+    // Configure AWS SDK
+    AWS.config.region = "us-east-1"; // your bot's region
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: "us-east-1:7f1450ca-d9b5-4b27-b01e-6a1f903e825f" // Cognito Identity Pool with Lex permissions
+    });
+
+    const lexruntime = new AWS.LexRuntimeV2();
+
+    const botId = "XQWRZASCZQ";       // From Lex console
+    const botAliasId = "GCHYSRUJZT"; // From Lex console
+    const localeId = "en_US";           // Depends on your bot
+    const sessionId = "user-" + Date.now();
+
+    document.getElementById("userInput").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        const userText = e.target.value;
+        e.target.value = "";
+
+        addMessage("You: " + userText, "user");
+
+        const params = {
+          botId,
+          botAliasId,
+          localeId,
+          sessionId,
+          text: userText
+        };
+
+        lexruntime.recognizeText(params, function(err, data) {
+          if (err) {
+            console.error(err);
+            addMessage("Error: " + err.message, "bot");
+          } else {
+            if (data.messages && data.messages.length > 0) {
+              addMessage("Bot: " + data.messages[0].content, "bot");
+            }
+          }
+        });
+      }
+    });
+
+    function addMessage(text, type) {
+      const msgDiv = document.createElement("div");
+      msgDiv.textContent = text;
+      msgDiv.className = type;
+      document.getElementById("messages").appendChild(msgDiv);
+    }
+  </script>
+</body>
+</html>
