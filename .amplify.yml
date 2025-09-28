@@ -4,7 +4,7 @@ frontend:
     preBuild:
       commands:
         # Create a runtime env.js that your app will load
-        - echo "window._env_ = { 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'AWS_REGION': '$AWS_REGION', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > frontend/env.js
+        - echo "window._env_ = { 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'REGION': '$REGION', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > frontend/env.js
     build:
       commands: []
   artifacts:
