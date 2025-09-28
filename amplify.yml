@@ -5,7 +5,7 @@ applications:
       phases:
         preBuild:
           commands:
-            - echo "window._env_ = { 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'REGION': '$REGION', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > env.js
+            - echo "window._env_ = { 'REGION': '$REGION', 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > env.js
         build:
           commands: []
       artifacts:
