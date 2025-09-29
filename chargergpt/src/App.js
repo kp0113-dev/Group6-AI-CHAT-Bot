@@ -21,19 +21,14 @@ export default function App() {
 
   // Initialize AWS SDK once
   useEffect(() => {
-    // Wait until window._env_ is loaded
-    if (!AWS || !window._env_?.IDENTITY_POOL_ID) {
-      console.error("Env.js not loaded yet or missing IdentityPoolId");
-      return;
-    }
-  
-    AWS.config.region = window._env_.REGION;
+    if (!AWS) return;
+    AWS.config.region = REGION;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-      IdentityPoolId: window._env_.IDENTITY_POOL_ID,
+      IdentityPoolId: IDPOOL,
     });
-  }, []);
+  }, [REGION, IDPOOL]);
 
-
+  
   // Append normal messages
   const appendMessage = (txt, cls) => {
     setMessages((prev) => [...prev, { txt, cls }]);
