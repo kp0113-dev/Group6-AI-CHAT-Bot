@@ -1,6 +1,6 @@
 version: 1
 applications:
-  - appRoot: lexBot-frontend
+  - appRoot: chargergpt
     frontend:
       phases:
         preBuild:
