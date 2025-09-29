@@ -1,0 +1,26 @@
+version: 1
+applications:
+  - appRoot: lexBot-frontend
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - >
+              echo "window._env_ = { 
+                'REGION': '$REGION', 
+                'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 
+                'BOT_ID': '$BOT_ID', 
+                'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 
+                'LOCALE_ID': '$LOCALE_ID' 
+              };" > env.js
+        build:
+          commands:
+            - npm ci
+            - npm run build
+      artifacts:
+        baseDirectory: build
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
