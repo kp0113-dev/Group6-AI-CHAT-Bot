@@ -34,7 +34,8 @@ def lambda_handler(event, context):
                 resolved_value = resolved_value_list[0] # resolved_value returns as a list so pull the value from the first index
                 session_attrs["savedResolvedValue"] = resolved_value # update saved subject value
             except IndexError:
-                resolved_value = slots["location"]["value"].get("interpretedValue")
+                resolved_value = slots["location"]["value"].get("originalValue")
+                session_attrs["savedResolvedValue"] = resolved_value  # update saved subject value
             print(f"Resolved value for {slot_name}: {resolved_value}")
 
 
@@ -50,12 +51,12 @@ def lambda_handler(event, context):
                 }
             }
 
-
     if resolved_value is not None:
         # Call searchDynamoDB Lambda
         payload = {
             "intentName": intent_name,
-            "resolvedValue": resolved_value
+            "resolvedValue": resolved_value,
+            "question": user_input
         }
         response = lambda_client.invoke(
             FunctionName="searchDynamoDB-prod",
@@ -63,7 +64,7 @@ def lambda_handler(event, context):
             Payload=json.dumps(payload)
         )
         search_result = json.loads(response["Payload"].read())
-        response_text = search_result.get("result", "No result returned.")
+        response_text = search_result
        
     # MAIN RETURN RESPONSE
     return {
