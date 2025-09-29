@@ -65,33 +65,43 @@ export default function App() {
     const text = input;
     setInput("");
     appendMessage("You: " + text, "user");
-
-    const lexruntime = new AWS.LexRuntimeV2();
-    const params = {
-      botId: BOT_ID,
-      botAliasId: BOT_ALIAS,
-      localeId: LOCALE,
-      sessionId,
-      text,
-    };
-
     setIsTyping(true);
 
-    lexruntime.recognizeText(params, function (err, data) {
+    // Refresh Cognito credentials before Lex call
+    AWS.config.credentials.get((err) => {
       if (err) {
-        console.error(err);
-        appendTypingMessage(
-          "Error: " + (err.message || JSON.stringify(err)),
-          "bot"
-        );
-      } else {
-        if (data.messages && data.messages.length) {
-          const botReply = "Bot: " + data.messages.map((m) => m.content).join(" ");
-          appendTypingMessage(botReply, "bot");
-        } else {
-          appendTypingMessage("Bot: (no message returned)", "bot");
-        }
+        console.error("Error getting AWS credentials", err);
+        appendTypingMessage("Error: " + err.message, "bot");
+        setIsTyping(false);
+        return;
       }
+
+      const lexruntime = new AWS.LexRuntimeV2();
+      const params = {
+        botId: BOT_ID,
+        botAliasId: BOT_ALIAS,
+        localeId: LOCALE,
+        sessionId,
+        text,
+      };
+
+      lexruntime.recognizeText(params, function (err, data) {
+        if (err) {
+          console.error(err);
+          appendTypingMessage(
+            "Error: " + (err.message || JSON.stringify(err)),
+            "bot"
+          );
+        } else {
+          if (data.messages && data.messages.length) {
+            const botReply =
+              "Bot: " + data.messages.map((m) => m.content).join(" ");
+            appendTypingMessage(botReply, "bot");
+          } else {
+            appendTypingMessage("Bot: (no message returned)", "bot");
+          }
+        }
+      });
     });
   };
 
