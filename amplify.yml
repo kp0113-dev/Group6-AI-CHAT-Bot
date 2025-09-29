@@ -1,26 +1,18 @@
 version: 1
 applications:
-  - appRoot: chargergpt
+  - appRoot: lexBot-frontend   # folder where your React app lives
     frontend:
       phases:
         preBuild:
           commands:
-            - |
-              cat > env.js <<EOL
-              window._env_ = {
-                REGION: "$REGION",
-                IDENTITY_POOL_ID: "$IDENTITY_POOL_ID",
-                BOT_ID: "$BOT_ID",
-                BOT_ALIAS_ID: "$BOT_ALIAS_ID",
-                LOCALE_ID: "$LOCALE_ID"
-              };
-              EOL
+            - npm ci
+            # Write environment variables into env.js so React can read them at runtime
+            - echo "window._env_ = { 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'REGION': '$REGION', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > public/env.js
         build:
           commands:
-            - npm ci
             - npm run build
       artifacts:
-        baseDirectory: build
+        baseDirectory: build    # React build output
         files:
           - '**/*'
       cache:
