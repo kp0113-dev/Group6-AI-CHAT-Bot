@@ -6,7 +6,6 @@ applications:
         preBuild:
           commands:
             - npm ci
-            # Write environment variables into env.js so React can read them at runtime
             - echo "window._env_ = { 'IDENTITY_POOL_ID': '$IDENTITY_POOL_ID', 'REGION': '$REGION', 'BOT_ID': '$BOT_ID', 'BOT_ALIAS_ID': '$BOT_ALIAS_ID', 'LOCALE_ID': '$LOCALE_ID' };" > public/env.js
         build:
           commands:
