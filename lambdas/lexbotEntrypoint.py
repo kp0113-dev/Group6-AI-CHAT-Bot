@@ -59,7 +59,7 @@ def lambda_handler(event, context):
             "question": user_input
         }
         response = lambda_client.invoke(
-            FunctionName="searchDynamoDB-dev-kamil",
+            FunctionName="searchDynamoDB-prod",
             InvocationType="RequestResponse",
             Payload=json.dumps(payload)
         )
