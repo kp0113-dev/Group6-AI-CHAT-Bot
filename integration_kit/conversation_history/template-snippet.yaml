@@ -1,0 +1,49 @@
+# Conversation History Integration - SAM Template Snippet
+# Copy the following into your SAM/CloudFormation template.
+# 1) Add the ConversationsTable resource
+# 2) Ensure the main router Lambda has Env Vars and IAM for the table
+# 3) Optionally add an Output for easy discovery
+
+Resources:
+  ConversationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectPrefix}-${Stage}-conversations"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: memory_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: memory_key
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+# In your main router Function (example logical ID: ChargerGPTFunction), add:
+#   Environment:
+#     Variables:
+#       TABLE_CONVERSATIONS: !Ref ConversationsTable
+#       FEATURE_CONVO_HISTORY: "true"
+#       CONVERSATIONS_TTL_DAYS: "30"
+#   Policies:
+#     - Version: '2012-10-17'
+#       Statement:
+#         - Effect: Allow
+#           Action:
+#             - dynamodb:GetItem
+#             - dynamodb:Query
+#             - dynamodb:Scan
+#             - dynamodb:PutItem
+#           Resource:
+#             - !GetAtt ConversationsTable.Arn
+
+Outputs:
+  ConversationsTableName:
+    Value: !Ref ConversationsTable
