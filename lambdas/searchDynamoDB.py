@@ -22,7 +22,7 @@ def lambda_handler(event, context):
             # Call Bedrock Lambda
             bedrock_payload = {"question": question, "dbResult": db_result}
             bedrock_response = lambda_client.invoke(
-                FunctionName="bedrock_generate-dev-kyler",  
+                FunctionName="bedrockGenerate-prod",  
                 InvocationType="RequestResponse",
                 Payload=json.dumps(bedrock_payload)
             )
