@@ -452,7 +452,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     # Try rule-based inference for incomplete/ambiguous phrases
     inferred = infer_intent_from_rules(transcript)
-    if inferred and (intent_name == "AMAZON.FallbackIntent" or intent_name not in {"GetBuildingHoursIntent","GetCampusLocationIntent","GetFAQIntent","GetClassScheduleIntent","GetInstructorLookupIntent"}):
+    if inferred and (intent_name in {"FallbackIntent", "AMAZON.FallbackIntent"} or intent_name not in {"GetBuildingHoursIntent","GetCampusLocationIntent","GetFAQIntent","GetClassScheduleIntent","GetInstructorLookupIntent"}):
         intent_name = inferred
 
     if intent_name == "GetBuildingHoursIntent":
@@ -516,7 +516,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if intent_name == "GetFAQIntent":
         topic = get_slot_value(slots, "FaqTopic")
         if not topic:
-            return elicit_slot(event, "FaqTopic", "What topic would you like to ask about?", session_attrs)
+            # Use the user's full utterance as the topic if slot wasn't captured
+            topic = (transcript or "").strip()
+            if not topic:
+                return elicit_slot(event, "FaqTopic", "What topic would you like to ask about?", session_attrs)
         w = _call_faq(topic)
         session_attrs.update((w.get("session_attrs") or {}))
         message = w.get("message", "")
@@ -582,7 +585,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return close_intent(event, "Instructor lookup feature is currently disabled.", session_attrs)
         course_code = get_slot_value(slots, "CourseCode")
         # If CourseCode is a pronoun or invalid, treat as missing and elicit
-        if course_code and _normalize(course_code) in PRONOUNS_COURSE:
+        if course_code and nlu_normalize(course_code) in PRONOUNS_COURSE:
             course_code = None
         elif course_code and not nlu_is_valid_course(course_code):
             course_code = None

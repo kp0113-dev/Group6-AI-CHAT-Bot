@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+
+# AWS SAM build artifacts
+.aws-sam/
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Local outputs from CLI tests
+out-*.json
+response-*.json
+payload.json
+eav.json

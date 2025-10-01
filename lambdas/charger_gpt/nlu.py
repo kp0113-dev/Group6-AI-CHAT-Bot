@@ -133,10 +133,15 @@ def infer_intent_from_rules(text: str) -> Optional[str]:
                 return rule.get("intent")
     except Exception:
         pass
-    if t.startswith("where is") or t.startswith("where's") or t.startswith("where is the"):
+    # Allow "where is" anywhere in the utterance (handles noise/prefixes)
+    if ("where is" in t) or ("where's" in t) or t.startswith("where is the"):
         return "GetCampusLocationIntent"
     if looks_like_hours_query(t):
         return "GetBuildingHoursIntent"
+    # Simple FAQ mapping for common topics
+    faq_keywords = ("parking", "dining", "tuition", "admissions", "financial aid", "scholarship")
+    if any(k in t for k in faq_keywords):
+        return "GetFAQIntent"
     return None
 
 
