@@ -1,15 +1,13 @@
 import json
 import boto3
+from datetime import datetime
 from lambdas.heuristics.heuristics import can_reuse_subject
 
-
 lambda_client = boto3.client("lambda")
-
 
 def lambda_handler(event, context):
     # Print statement for Debugging in CloudWatch
     print("Received event:", json.dumps(event))
-
 
     # Get the user input text
     user_input = event.get("inputTranscript", "")
@@ -17,11 +15,13 @@ def lambda_handler(event, context):
     # Set default response
     response_text = "Deafult Response"
 
-
     # Get the current intent items
+    sessionId = event["sessionId"]
     intent_name = event["sessionState"]["intent"]["name"]
     slots = event["sessionState"]["intent"].get("slots", {})
     session_attrs = event["sessionState"].get("sessionAttributes", {})
+    logs_json = session_attrs.get("conversationLogs", "[]")
+    logs = json.loads(logs_json)
     resolved_value = None
    
     # Check if intent is fulfilled and check if slot has 'value'
@@ -37,7 +37,6 @@ def lambda_handler(event, context):
                 resolved_value = slots["location"]["value"].get("originalValue")
                 session_attrs["savedResolvedValue"] = resolved_value  # update saved subject value
             print(f"Resolved value for {slot_name}: {resolved_value}")
-
 
     # Return back to Lex and invoke slot prompt asking user to specify slot value
     if resolved_value is None:
@@ -65,7 +64,27 @@ def lambda_handler(event, context):
         )
         search_result = json.loads(response["Payload"].read())
         response_text = search_result
-       
+    
+    # add the question and response + timestamp to the current conversation json
+    logs.append({
+        "timestamp": datetime.utcnow().isoformat(),
+        "userMessage": user_input,
+        "botMessage": response_text
+    })
+    session_attrs["conversationLogs"] = json.dumps(logs)
+    
+    # send the current conversation payload to 'saveConversations' lambda
+    payload = {
+        "sessionId": sessionId,
+        "conversation": logs,
+        "endedAt": datetime.utcnow().isoformat()
+    }
+    lambda_client.invoke(
+        FunctionName="saveConversations",
+        InvocationType="Event",
+        Payload=json.dumps(payload)
+    )
+
     # MAIN RETURN RESPONSE
     return {
         "sessionState": {
