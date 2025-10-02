@@ -1,6 +1,11 @@
 import json
 import boto3
 from lambdas.heuristics.heuristics import can_reuse_subject
+from lambdas.conversation_history.memory_module import (
+    get_user_id as mem_get_user_id,
+    append_turn_history as mem_append,
+    save_persistent_memory as mem_save,
+)
 
 
 lambda_client = boto3.client("lambda")
@@ -34,7 +39,8 @@ def lambda_handler(event, context):
                 resolved_value = resolved_value_list[0] # resolved_value returns as a list so pull the value from the first index
                 session_attrs["savedResolvedValue"] = resolved_value # update saved subject value
             except IndexError:
-                resolved_value = slots["location"]["value"].get("interpretedValue")
+                resolved_value = slots["location"]["value"].get("originalValue")
+                session_attrs["savedResolvedValue"] = resolved_value  # update saved subject value
             print(f"Resolved value for {slot_name}: {resolved_value}")
 
 
@@ -50,12 +56,12 @@ def lambda_handler(event, context):
                 }
             }
 
-
     if resolved_value is not None:
         # Call searchDynamoDB Lambda
         payload = {
             "intentName": intent_name,
-            "resolvedValue": resolved_value
+            "resolvedValue": resolved_value,
+            "question": user_input
         }
         response = lambda_client.invoke(
             FunctionName="searchDynamoDB-prod",
@@ -63,10 +69,10 @@ def lambda_handler(event, context):
             Payload=json.dumps(payload)
         )
         search_result = json.loads(response["Payload"].read())
-        response_text = search_result.get("result", "No result returned.")
+        response_text = search_result
        
     # MAIN RETURN RESPONSE
-    return {
+    response_body = {
         "sessionState": {
             "sessionAttributes": session_attrs,
             "dialogAction": {
@@ -84,3 +90,14 @@ def lambda_handler(event, context):
             }
         ]
     }
+    # Append turn history and persist session memory (no-op if env/table not configured)
+    try:
+        user_id = mem_get_user_id(event)
+        # Use the final message content for logging
+        final_msg = str(response_text)
+        mem_append(user_id, event, final_msg, session_attrs)
+        mem_save(user_id, session_attrs)
+    except Exception:
+        # Never block the conversation on history errors
+        pass
+    return response_body
