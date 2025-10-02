@@ -39,7 +39,7 @@ def lambda_handler(event, context):
             item = {
                 "sessionId": session_id,
                 "endedAt": ended_at,
-                "conversation": new_conversation
+                "conversation": new_conversation,
                 "expirationTime": ttl_value
             }
             table.put_item(Item=item)
