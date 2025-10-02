@@ -1,10 +1,12 @@
 import json
 import boto3
+import time
 from datetime import datetime
 from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SavedConversations")   
+table = dynamodb.Table("SavedConversations")
+ttl_value = int(time.time()) + (3 * 24 * 60 * 60)  # now + 3 days
 
 def lambda_handler(event, context):
     try:
@@ -38,6 +40,7 @@ def lambda_handler(event, context):
                 "sessionId": session_id,
                 "endedAt": ended_at,
                 "conversation": new_conversation
+                "expirationTime": ttl_value
             }
             table.put_item(Item=item)
 
