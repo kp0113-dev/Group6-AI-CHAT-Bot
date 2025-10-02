@@ -80,7 +80,7 @@ def lambda_handler(event, context):
         "endedAt": datetime.utcnow().isoformat()
     }
     lambda_client.invoke(
-        FunctionName="saveConversations",
+        FunctionName="saveConversations-dev-kamil",
         InvocationType="Event",
         Payload=json.dumps(payload)
     )
