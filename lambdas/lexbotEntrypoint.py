@@ -77,6 +77,7 @@ def lambda_handler(event, context):
     payload = {
         "sessionId": sessionId,
         "conversation": logs,
+        "savedResolvedValue": session_attrs.get("savedResolvedValue", ""),
         "endedAt": datetime.utcnow().isoformat()
     }
     lambda_client.invoke(

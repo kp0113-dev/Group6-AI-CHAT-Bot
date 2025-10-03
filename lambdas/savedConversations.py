@@ -11,6 +11,7 @@ ttl_value = int(time.time()) + (3 * 24 * 60 * 60)  # now + 3 days
 def lambda_handler(event, context):
     try:
         session_id = event.get("sessionId")
+        saved_resolved_value = event.get("savedResolvedValue")
         new_conversation = event.get("conversation", [])
         ended_at = event.get("endedAt", datetime.utcnow().isoformat())
 
@@ -28,10 +29,11 @@ def lambda_handler(event, context):
             # Use update_item to modify specific attributes
             table.update_item(
                 Key={"sessionId": session_id},
-                UpdateExpression="SET conversation = :conv, endedAt = :end",
-                ExpressionAttributeValues={
-                    ":conv": updated_conversation,
-                    ":end": ended_at
+                UpdateExpression = "SET conversation = :conv, endedAt = :end, savedResolvedValue = :srv",
+                ExpressionAttributeValues = {
+                    ":conv": new_conversation,
+                    ":end": ended_at,
+                    ":srv": saved_resolved_value,
                 }
             )
         else:
@@ -40,6 +42,7 @@ def lambda_handler(event, context):
                 "sessionId": session_id,
                 "endedAt": ended_at,
                 "conversation": new_conversation,
+                "savedResolvedValue": saved_resolved_value,
                 "expirationTime": ttl_value
             }
             table.put_item(Item=item)
