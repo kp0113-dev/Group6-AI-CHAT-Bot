@@ -25,12 +25,10 @@ export default function App() {
     });
   }, [REGION, IDPOOL]);
 
-  // Append text message
   const appendMessage = (txt, cls) => {
     setMessages((prev) => [...prev, { txt, cls }]);
   };
 
-  // Typing animation for bot text
   const appendTypingMessage = (fullText, cls) => {
     let i = 0;
     const baseMessage = { txt: "", cls };
@@ -84,13 +82,11 @@ export default function App() {
           console.error(err);
           appendTypingMessage("Error: " + err.message, "bot");
         } else {
-          // Display bot text messages
           if (data.messages && data.messages.length) {
             const botReply = data.messages.map((m) => m.content).join(" ");
             appendTypingMessage("Bot: " + botReply, "bot");
           }
 
-          // Display map if Lex returned location
           const location = data.sessionState?.sessionAttributes?.location;
           if (location) {
             try {
@@ -109,7 +105,7 @@ export default function App() {
             } catch (err) {
               console.error("Error fetching map:", err);
             } finally {
-              setIsTyping(false); // ensure typing indicator stops after image
+              setIsTyping(false);
             }
           }
         }
@@ -118,32 +114,68 @@ export default function App() {
   };
 
   return (
-    <div id="chat" style={{ padding: "20px", maxWidth: "500px", margin: "0 auto" }}>
+    <div
+      id="chat"
+      style={{
+        padding: "30px",
+        maxWidth: "750px",
+        margin: "50px auto",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        backgroundColor: "#fefefe",
+        borderRadius: "10px",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+      }}
+    >
       <div
         id="messages"
         style={{
           border: "1px solid #ccc",
-          borderRadius: "5px",
-          padding: "10px",
-          height: "300px",
+          borderRadius: "10px",
+          padding: "15px",
+          height: "500px",
+          width: "700px",
           overflowY: "auto",
-          marginBottom: "10px",
+          marginBottom: "15px",
+          backgroundColor: "#fafafa",
         }}
       >
         {messages.map((m, i) => {
           if (m.type === "image") {
             return (
-              <div key={i} className={m.cls} style={{ textAlign: "center", margin: "10px 0" }}>
-                <h4>{m.location} Map</h4>
+              <div
+                key={i}
+                className={m.cls}
+                style={{ textAlign: "center", margin: "15px 0" }}
+              >
+                <h4 style={{ marginBottom: "8px" }}>{m.location} Map</h4>
                 <img
                   src={m.txt}
                   alt={`${m.location} map`}
-                  style={{ width: "100%", maxWidth: "400px", borderRadius: "8px" }}
+                  style={{
+                    width: "100%",
+                    maxWidth: "500px",
+                    borderRadius: "10px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
                 />
               </div>
             );
           }
-          return <div key={i} className={m.cls}>{m.txt}</div>;
+          return (
+            <div
+              key={i}
+              className={m.cls}
+              style={{
+                margin: "8px 0",
+                whiteSpace: "pre-wrap",
+                lineHeight: "1.4",
+              }}
+            >
+              {m.txt}
+            </div>
+          );
         })}
 
         {isTyping && (
@@ -155,16 +187,25 @@ export default function App() {
         )}
       </div>
 
-      <form onSubmit={handleSend}>
+      <form
+        onSubmit={handleSend}
+        style={{
+          display: "flex",
+          width: "700px",
+        }}
+      >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask something..."
           style={{
-            width: "100%",
-            padding: "10px",
-            borderRadius: "5px",
+            flex: 1,
+            padding: "12px",
+            borderRadius: "10px",
             border: "1px solid #ccc",
+            fontSize: "16px",
+            outline: "none",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
           }}
         />
       </form>
