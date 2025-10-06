@@ -8,8 +8,6 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [mapUrl, setMapUrl] = useState(null);
-  const [mapLocation, setMapLocation] = useState(null);
 
   const REGION = window._env_?.REGION;
   const IDPOOL = window._env_?.IDENTITY_POOL_ID;
@@ -27,19 +25,26 @@ export default function App() {
     });
   }, [REGION, IDPOOL]);
 
+  // Append text message
   const appendMessage = (txt, cls) => {
     setMessages((prev) => [...prev, { txt, cls }]);
   };
 
+  // Typing animation for bot text
   const appendTypingMessage = (fullText, cls) => {
     let i = 0;
     const baseMessage = { txt: "", cls };
     setMessages((prev) => [...prev, baseMessage]);
+    setIsTyping(true);
+
     const interval = setInterval(() => {
       i++;
       setMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = { ...baseMessage, txt: fullText.slice(0, i) };
+        updated[updated.length - 1] = {
+          ...baseMessage,
+          txt: fullText.slice(0, i),
+        };
         return updated;
       });
       if (i === fullText.length) {
@@ -58,7 +63,7 @@ export default function App() {
     appendMessage("You: " + text, "user");
     setIsTyping(true);
 
-    AWS.config.credentials.get((err) => {
+    AWS.config.credentials.get(async (err) => {
       if (err) {
         appendTypingMessage("Error: " + err.message, "bot");
         setIsTyping(false);
@@ -74,22 +79,38 @@ export default function App() {
         text,
       };
 
-      lexruntime.recognizeText(params, async function (err, data) {
+      lexruntime.recognizeText(params, async (err, data) => {
         if (err) {
           console.error(err);
           appendTypingMessage("Error: " + err.message, "bot");
         } else {
+          // Display bot text messages
           if (data.messages && data.messages.length) {
-            const botReply = "Bot: " + data.messages.map((m) => m.content).join(" ");
-            appendTypingMessage(botReply, "bot");
+            const botReply = data.messages.map((m) => m.content).join(" ");
+            appendTypingMessage("Bot: " + botReply, "bot");
           }
 
-          // ✅ Look for location sessionAttribute from Lex
+          // Display map if Lex returned location
           const location = data.sessionState?.sessionAttributes?.location;
           if (location) {
-            setMapLocation(location);
-            const url = await getMapImageUrl(location);
-            setMapUrl(url);
+            try {
+              const url = await getMapImageUrl(location);
+              if (url) {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    txt: url,
+                    cls: "bot-map",
+                    type: "image",
+                    location,
+                  },
+                ]);
+              }
+            } catch (err) {
+              console.error("Error fetching map:", err);
+            } finally {
+              setIsTyping(false); // ensure typing indicator stops after image
+            }
           }
         }
       });
@@ -109,10 +130,29 @@ export default function App() {
           marginBottom: "10px",
         }}
       >
-        {messages.map((m, i) => (
-          <div key={i} className={m.cls}>{m.txt}</div>
-        ))}
-        {isTyping && <div className="typing-indicator"><span></span><span></span><span></span></div>}
+        {messages.map((m, i) => {
+          if (m.type === "image") {
+            return (
+              <div key={i} className={m.cls} style={{ textAlign: "center", margin: "10px 0" }}>
+                <h4>{m.location} Map</h4>
+                <img
+                  src={m.txt}
+                  alt={`${m.location} map`}
+                  style={{ width: "100%", maxWidth: "400px", borderRadius: "8px" }}
+                />
+              </div>
+            );
+          }
+          return <div key={i} className={m.cls}>{m.txt}</div>;
+        })}
+
+        {isTyping && (
+          <div className="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSend}>
@@ -128,14 +168,6 @@ export default function App() {
           }}
         />
       </form>
-
-      {/* 🗺️ Map Section */}
-      {mapUrl && (
-        <div style={{ marginTop: "20px", textAlign: "center" }}>
-          <h4>{mapLocation} Map</h4>
-          <img src={mapUrl} alt={`${mapLocation} map`} style={{ width: "100%", maxWidth: "400px", borderRadius: "8px" }} />
-        </div>
-      )}
     </div>
   );
 }
