@@ -16,7 +16,7 @@ const s3Client = new S3Client({
 
 export const getMapImageUrl = async (location) => {
   try {
-    const key = `maps/${location.toLowerCase()}.jpg`; // your image filename
+    const key = `maps/${location.toLowerCase()}.jpg`; // image filename
     const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
 
     // Generate a signed URL valid for 60 seconds

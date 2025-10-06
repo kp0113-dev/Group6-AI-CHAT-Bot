@@ -1,6 +1,6 @@
 version: 1
 applications:
-  - appRoot: chargergpt   # folder where your React app lives
+  - appRoot: chargergpt   # folder where React app lives
     frontend:
       phases:
         preBuild:

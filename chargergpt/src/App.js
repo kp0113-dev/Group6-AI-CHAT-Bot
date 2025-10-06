@@ -5,18 +5,22 @@ import { getMapImageUrl } from "./aws/s3Helper";
 const AWS = window.AWS;
 
 export default function App() {
+  // State variables for chat messages, user input, and typing animation
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
+  // Environment variables injected at runtime
   const REGION = window._env_?.REGION;
   const IDPOOL = window._env_?.IDENTITY_POOL_ID;
   const BOT_ID = window._env_?.BOT_ID;
   const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
   const LOCALE = window._env_?.LOCALE_ID || "en_US";
 
+  // Generate a unique session ID for each user session
   const sessionId = useMemo(() => "user-" + Date.now(), []);
 
+  // Configure AWS credentials on mount
   useEffect(() => {
     if (!AWS) return;
     AWS.config.region = REGION;
@@ -25,10 +29,12 @@ export default function App() {
     });
   }, [REGION, IDPOOL]);
 
+  // Helper to append a new message to chat
   const appendMessage = (txt, cls) => {
     setMessages((prev) => [...prev, { txt, cls }]);
   };
 
+  // Displays a message one character at a time (typing effect)
   const appendTypingMessage = (fullText, cls) => {
     let i = 0;
     const baseMessage = { txt: "", cls };
@@ -45,6 +51,8 @@ export default function App() {
         };
         return updated;
       });
+
+      // Stop typing animation once message is complete
       if (i === fullText.length) {
         clearInterval(interval);
         setIsTyping(false);
@@ -52,6 +60,7 @@ export default function App() {
     }, 30);
   };
 
+  // Handles sending user messages to Lex
   const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -61,6 +70,7 @@ export default function App() {
     appendMessage("You: " + text, "user");
     setIsTyping(true);
 
+    // Retrieve temporary AWS credentials before making Lex call
     AWS.config.credentials.get(async (err) => {
       if (err) {
         appendTypingMessage("Error: " + err.message, "bot");
@@ -77,16 +87,19 @@ export default function App() {
         text,
       };
 
+      // Send text input to Lex bot
       lexruntime.recognizeText(params, async (err, data) => {
         if (err) {
           console.error(err);
           appendTypingMessage("Error: " + err.message, "bot");
         } else {
+          // Append Lex response messages
           if (data.messages && data.messages.length) {
             const botReply = data.messages.map((m) => m.content).join(" ");
             appendTypingMessage("Bot: " + botReply, "bot");
           }
 
+          // If Lex returns a 'location' attribute, show a map image
           const location = data.sessionState?.sessionAttributes?.location;
           if (location) {
             try {
@@ -128,6 +141,7 @@ export default function App() {
         boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
       }}
     >
+      {/* Chat message display area */}
       <div
         id="messages"
         style={{
@@ -141,8 +155,10 @@ export default function App() {
           backgroundColor: "#fafafa",
         }}
       >
+        {/* Render each message (text or image) */}
         {messages.map((m, i) => {
           if (m.type === "image") {
+            // Map image message
             return (
               <div
                 key={i}
@@ -163,6 +179,7 @@ export default function App() {
               </div>
             );
           }
+          // Regular text message
           return (
             <div
               key={i}
@@ -178,6 +195,7 @@ export default function App() {
           );
         })}
 
+        {/* Typing indicator animation */}
         {isTyping && (
           <div className="typing-indicator">
             <span></span>
@@ -187,6 +205,7 @@ export default function App() {
         )}
       </div>
 
+      {/* Input form for sending new messages */}
       <form
         onSubmit={handleSend}
         style={{
