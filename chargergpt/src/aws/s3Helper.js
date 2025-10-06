@@ -20,11 +20,11 @@ export const getMapImageUrl = async (location) => {
     const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
     const response = await s3Client.send(command);
 
-    // Convert stream to Blob URL
-    const blob = await response.Body.transformToByteArray();
-    return URL.createObjectURL(new Blob([blob]));
+    const blob = await new Response(response.Body).blob();
+    return URL.createObjectURL(blob);
   } catch (err) {
     console.error("Error fetching S3 map:", err);
     return null;
   }
 };
+
