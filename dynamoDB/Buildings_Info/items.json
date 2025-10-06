@@ -342,6 +342,15 @@
     ]
   },
   {
+    "value": "Salmon Library",
+    "building_id": "lib",
+    "address": "4700 Holmes Ave NW, Huntsville, AL 35805",
+    "hours": null,
+    "sources": [
+      "https://www.uah.edu/map"
+    ]
+  },
+  {
     "value": "von Braun Research Hall",
     "building_id": "vbh",
     "address": "301 Sparkman Drive, Huntsville, AL 35899",
