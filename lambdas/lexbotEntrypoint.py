@@ -20,6 +20,7 @@ def lambda_handler(event, context):
     intent_name = event["sessionState"]["intent"]["name"]
     slots = event["sessionState"]["intent"].get("slots", {})
     session_attrs = event["sessionState"].get("sessionAttributes", {})
+    session_attrs["location"] = None
     logs_json = session_attrs.get("conversationLogs", "[]")
     logs = json.loads(logs_json)
     resolved_value = None
@@ -49,6 +50,25 @@ def lambda_handler(event, context):
                     "intent": event["sessionState"]["intent"]
                 }
             }
+
+    #----------------------------------------------------------------------------------------------------
+    #----------------------------------------------------------------------------------------------------
+    if (intent_name == "GetMap"):
+        session_attrs["location"] = resolved_value
+        return {
+            "sessionState": {
+                "sessionAttributes": session_attrs,
+                "dialogAction": {
+                    "type": "Close"   # End the conversation
+                },
+                "intent": {
+                    "name": intent_name,
+                    "state": "Fulfilled"
+                }
+            }
+        }
+    #----------------------------------------------------------------------------------------------------
+    #----------------------------------------------------------------------------------------------------
 
     if resolved_value is not None:
         # Call searchDynamoDB Lambda

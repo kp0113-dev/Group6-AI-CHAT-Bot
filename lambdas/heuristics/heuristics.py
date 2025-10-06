@@ -2,6 +2,7 @@
 REUSE_LAST_SUBJECT = {
     "BuildingInfo-GetTime": True,
     "BuildingInfo-GetLocation": True,
+    "GetMap": True,
 }
 
 def can_reuse_subject(intent_name: str) -> bool:
