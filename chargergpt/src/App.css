@@ -1,0 +1,58 @@
+/* Chat UI styles */
+.user {
+  text-align: right;
+  background: #0078ff;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin: 5px;
+  display: inline-block;
+}
+
+.bot {
+  text-align: left;
+  background: #f1f1f1;
+  color: black;
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin: 5px;
+  display: inline-block;
+}
+
+/* Typing indicator dots */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #f1f1f1;
+  border-radius: 12px;
+  width: fit-content;
+  margin: 5px 0;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background-color: #555;
+  border-radius: 50%;
+  display: inline-block;
+  animation: blink 1.4s infinite both;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: 0s;
+}
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0% { opacity: 0.2; transform: translateY(0); }
+  20% { opacity: 1; transform: translateY(-2px); }
+  40% { opacity: 0.2; transform: translateY(0); }
+  100% { opacity: 0.2; transform: translateY(0); }
+}

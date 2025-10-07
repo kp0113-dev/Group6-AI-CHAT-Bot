@@ -1,0 +1,19 @@
+version: 1
+applications:
+  - appRoot: chargergpt   # folder where React app lives
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+            - 'echo "window._env_ = { \"IDENTITY_POOL_ID\": \"$IDENTITY_POOL_ID\", \"REGION\": \"$REGION\", \"BOT_ID\": \"$BOT_ID\", \"BOT_ALIAS_ID\": \"$BOT_ALIAS_ID\", \"LOCALE_ID\": \"$LOCALE_ID\" };" > public/env.js'
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: build
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*

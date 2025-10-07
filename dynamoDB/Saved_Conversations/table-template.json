@@ -1,0 +1,10 @@
+{
+  "TableName": "SavedConversations",
+  "AttributeDefinitions": [
+    {"AttributeName": "sessionId", "AttributeType": "S"}
+  ],
+  "KeySchema": [
+    {"AttributeName": "sessionId", "KeyType": "HASH"}
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}
