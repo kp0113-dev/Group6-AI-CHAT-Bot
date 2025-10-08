@@ -1,5 +1,5 @@
 {
-  "TableName": "SavedConversations-prod",
+  "TableName": "SavedConversations",
   "AttributeDefinitions": [
     {"AttributeName": "sessionId", "AttributeType": "S"}
   ],

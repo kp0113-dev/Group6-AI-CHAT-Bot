@@ -5,7 +5,7 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SavedConversations-prod")
+table = dynamodb.Table("SavedConversations")
 ttl_value = int(time.time()) + (3 * 24 * 60 * 60)  # now + 3 days
 
 def lambda_handler(event, context):
