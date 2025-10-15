@@ -5,22 +5,21 @@ import { getMapImageUrl } from "./aws/s3Helper";
 const AWS = window.AWS;
 
 export default function App() {
-  // State variables for chat messages, user input, and typing animation
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [savedSessionIDs, setSavedSessionIDs] = useState([]); // stores up to 3 session IDs
+  const [activeSession, setActiveSession] = useState(null); // 🔹 NEW: track which session is currently displayed
 
-  // Environment variables injected at runtime
   const REGION = window._env_?.REGION;
   const IDPOOL = window._env_?.IDENTITY_POOL_ID;
   const BOT_ID = window._env_?.BOT_ID;
   const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
   const LOCALE = window._env_?.LOCALE_ID || "en_US";
 
-  // Generate a unique session ID for each user session
   const sessionId = useMemo(() => "user-" + Date.now(), []);
 
-  // Configure AWS credentials on mount
+  // Configure AWS
   useEffect(() => {
     if (!AWS) return;
     AWS.config.region = REGION;
@@ -29,12 +28,10 @@ export default function App() {
     });
   }, [REGION, IDPOOL]);
 
-  // Helper to append a new message to chat
   const appendMessage = (txt, cls) => {
     setMessages((prev) => [...prev, { txt, cls }]);
   };
 
-  // Displays a message one character at a time (typing effect)
   const appendTypingMessage = (fullText, cls) => {
     let i = 0;
     const baseMessage = { txt: "", cls };
@@ -52,15 +49,14 @@ export default function App() {
         return updated;
       });
 
-      // Stop typing animation once message is complete
       if (i === fullText.length) {
         clearInterval(interval);
         setIsTyping(false);
       }
-    }, 30);
+    }, 25);
   };
 
-  // Handles sending user messages to Lex
+  // --- Send message to Lex bot ---
   const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -70,7 +66,6 @@ export default function App() {
     appendMessage("You: " + text, "user");
     setIsTyping(true);
 
-    // Retrieve temporary AWS credentials before making Lex call
     AWS.config.credentials.get(async (err) => {
       if (err) {
         appendTypingMessage("Error: " + err.message, "bot");
@@ -87,19 +82,43 @@ export default function App() {
         text,
       };
 
-      // Send text input to Lex bot
       lexruntime.recognizeText(params, async (err, data) => {
         if (err) {
           console.error(err);
           appendTypingMessage("Error: " + err.message, "bot");
         } else {
-          // Append Lex response messages
+          // 🔹 Expect backend JSON: {"response":"...", "sessionID":"..."}
           if (data.messages && data.messages.length) {
-            const botReply = data.messages.map((m) => m.content).join(" ");
+            let botReply = "";
+            let returnedSessionID = null;
+
+            try {
+              const content = data.messages.map((m) => m.content).join(" ");
+              const parsed = JSON.parse(content);
+
+              if (parsed.response) {
+                botReply = parsed.response;
+                returnedSessionID = parsed.sessionID;
+              } else {
+                botReply = content;
+              }
+            } catch {
+              botReply = data.messages.map((m) => m.content).join(" ");
+            }
+
             appendTypingMessage("Bot: " + botReply, "bot");
+
+            // 🔹 Maintain rolling session list
+            const effectiveSessionID = returnedSessionID || sessionId;
+            setSavedSessionIDs((prev) => {
+              const updated = [effectiveSessionID, ...prev];
+              if (updated.length > 3) updated.pop();
+              return updated;
+            });
+            setActiveSession(effectiveSessionID);
           }
 
-          // If Lex returns a 'location' attribute, show a map image
+          // Optional: map rendering
           const location = data.sessionState?.sessionAttributes?.location;
           if (location) {
             try {
@@ -107,12 +126,7 @@ export default function App() {
               if (url) {
                 setMessages((prev) => [
                   ...prev,
-                  {
-                    txt: url,
-                    cls: "bot-map",
-                    type: "image",
-                    location,
-                  },
+                  { txt: url, cls: "bot-map", type: "image", location },
                 ]);
               }
             } catch (err) {
@@ -126,45 +140,145 @@ export default function App() {
     });
   };
 
+  // --- Helper: Display restored chat messages ---
+  const displayRestoredChat = async (conversation) => {
+    if (!conversation || !conversation.length) {
+      appendMessage("No messages found in this chat.", "bot");
+      return;
+    }
+
+    // Wipe current messages before restoring
+    setMessages([]);
+
+    for (const entry of conversation) {
+      const userMsg = entry.M.userMessage?.S;
+      const botMsg = entry.M.botMessage?.S;
+
+      // Display each message with slight delay for realism
+      if (userMsg) {
+        await new Promise((res) => {
+          appendTypingMessage("You: " + userMsg, "user");
+          setTimeout(res, 100);
+        });
+      }
+      if (botMsg) {
+        await new Promise((res) => {
+          appendTypingMessage("Bot: " + botMsg, "bot");
+          setTimeout(res, 150);
+        });
+      }
+    }
+  };
+
+  // --- Restore from DynamoDB Lambda ---
+  const restoreChats = async (targetSessionId) => {
+    if (!targetSessionId) {
+      appendMessage("No saved session found for this slot.", "bot");
+      return;
+    }
+
+    try {
+      const lambda = new AWS.Lambda();
+      const params = {
+        FunctionName: "restoreChats",
+        Payload: JSON.stringify({ sessionId: targetSessionId }),
+      };
+
+      const result = await lambda.invoke(params).promise();
+      const payload = JSON.parse(result.Payload);
+      const conversation = payload.conversation?.L || [];
+
+      setActiveSession(targetSessionId);
+
+      // 🔹 NEW: animate restored messages in order
+      await displayRestoredChat(conversation);
+    } catch (err) {
+      console.error("Error restoring chat:", err);
+      appendMessage("Error restoring chat: " + err.message, "bot");
+    }
+  };
+
   return (
     <div
       id="chat"
       style={{
         padding: "30px",
-        maxWidth: "750px",
+        maxWidth: "900px",
         margin: "50px auto",
         display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        backgroundColor: "#fefefe",
-        borderRadius: "10px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+        gap: "20px",
       }}
     >
-      {/* Chat message display area */}
+      {/* Sidebar for Chat Tabs */}
       <div
-        id="messages"
         style={{
-          border: "1px solid #ccc",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          width: "150px",
+          backgroundColor: "#f9f9f9",
+          padding: "10px",
           borderRadius: "10px",
-          padding: "15px",
-          height: "500px",
-          width: "700px",
-          overflowY: "auto",
-          marginBottom: "15px",
-          backgroundColor: "#fafafa",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
         }}
       >
-        {/* Render each message (text or image) */}
-        {messages.map((m, i) => {
-          if (m.type === "image") {
-            // Map image message
-            return (
-              <div
-                key={i}
-                className={m.cls}
-                style={{ textAlign: "center", margin: "15px 0" }}
-              >
+        <h4 style={{ textAlign: "center", marginBottom: "10px" }}>Saved Chats</h4>
+
+        {["Chat 1", "Chat 2", "Chat 3"].map((label, idx) => (
+          <button
+            key={label}
+            onClick={() => restoreChats(savedSessionIDs[idx])}
+            disabled={!savedSessionIDs[idx]}
+            style={{
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              backgroundColor:
+                activeSession === savedSessionIDs[idx]
+                  ? "#0056b3"
+                  : savedSessionIDs[idx]
+                  ? "#007bff"
+                  : "#ddd",
+              color: savedSessionIDs[idx] ? "#fff" : "#666",
+              cursor: savedSessionIDs[idx] ? "pointer" : "not-allowed",
+              fontWeight: "bold",
+              transition: "0.2s",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Chat Area */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          backgroundColor: "#fefefe",
+          borderRadius: "10px",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+          padding: "20px",
+        }}
+      >
+        <div
+          id="messages"
+          style={{
+            border: "1px solid #ccc",
+            borderRadius: "10px",
+            padding: "15px",
+            height: "500px",
+            width: "100%",
+            overflowY: "auto",
+            marginBottom: "15px",
+            backgroundColor: "#fafafa",
+          }}
+        >
+          {messages.map((m, i) =>
+            m.type === "image" ? (
+              <div key={i} className={m.cls} style={{ textAlign: "center", margin: "15px 0" }}>
                 <h4 style={{ marginBottom: "8px" }}>{m.location} Map</h4>
                 <img
                   src={m.txt}
@@ -177,57 +291,48 @@ export default function App() {
                   }}
                 />
               </div>
-            );
-          }
-          // Regular text message
-          return (
-            <div
-              key={i}
-              className={m.cls}
-              style={{
-                margin: "8px 0",
-                whiteSpace: "pre-wrap",
-                lineHeight: "1.4",
-              }}
-            >
-              {m.txt}
+            ) : (
+              <div
+                key={i}
+                className={m.cls}
+                style={{
+                  margin: "8px 0",
+                  whiteSpace: "pre-wrap",
+                  lineHeight: "1.4",
+                }}
+              >
+                {m.txt}
+              </div>
+            )
+          )}
+
+          {isTyping && (
+            <div className="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
             </div>
-          );
-        })}
+          )}
+        </div>
 
-        {/* Typing indicator animation */}
-        {isTyping && (
-          <div className="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        )}
+        {/* Input */}
+        <form onSubmit={handleSend} style={{ display: "flex", width: "100%" }}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask something..."
+            style={{
+              flex: 1,
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #ccc",
+              fontSize: "16px",
+              outline: "none",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            }}
+          />
+        </form>
       </div>
-
-      {/* Input form for sending new messages */}
-      <form
-        onSubmit={handleSend}
-        style={{
-          display: "flex",
-          width: "700px",
-        }}
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask something..."
-          style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #ccc",
-            fontSize: "16px",
-            outline: "none",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}
-        />
-      </form>
     </div>
   );
 }
