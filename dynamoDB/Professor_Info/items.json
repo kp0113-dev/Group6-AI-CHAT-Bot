@@ -1,16 +1,146 @@
 [
   {
-    "id": "user-001",
-    "name": "Alice",
-    "email": "alice@example.com",
-    "role": "admin",
-    "createdAt": "2025-09-22T10:00:00Z"
+    "id": "huaming.zhang@uah.edu",
+    "name": "Huaming Zhang, Ph.D.",
+    "email": "huaming.zhang@uah.edu",
+    "role": "Interim Chair; Professor",
+    "department": "Computer Science",
+    "office": "OKT N300I",
+    "phone": "256.824.5084"
   },
   {
-    "id": "user-002",
-    "name": "Bob",
-    "email": "bob@example.com",
-    "role": "editor",
-    "createdAt": "2025-09-22T10:05:00Z"
+    "id": "beth.allen@uah.edu",
+    "name": "Beth Allen, M.S.",
+    "email": "beth.allen@uah.edu",
+    "role": "Senior Lecturer",
+    "department": "Computer Science",
+    "office": "OKT N300G",
+    "phone": "256.824.5320"
+  },
+  {
+    "id": "chaity.banerjee.mukherjee@uah.edu",
+    "name": "Chaity Banerjee, Ph.D.",
+    "email": "chaity.banerjee.mukherjee@uah.edu",
+    "role": "Assistant Professor",
+    "department": "Computer Science",
+    "office": "OKT N360",
+    "phone": "256.824.5179"
+  },
+  {
+    "id": "joshua.booth@uah.edu",
+    "name": "Joshua Booth, Ph.D.",
+    "email": "joshua.booth@uah.edu",
+    "role": "Assistant Professor",
+    "department": "Computer Science",
+    "office": "OKT N345",
+    "phone": "256.824.6433",
+    "createdAt": "2025-10-15T20:30:00Z"
+  },
+  {
+    "id": "bramwell.brizendine@uah.edu",
+    "name": "Bramwell Brizendine, Ph.D.",
+    "email": "bramwell.brizendine@uah.edu",
+    "role": "Assistant Professor",
+    "department": "Computer Science",
+    "office": "OKT N344",
+    "phone": "256.824.5174"
+  },
+  {
+    "id": "jc1540@uah.edu",
+    "name": "Jingshu Chen, Ph.D.",
+    "email": "jc1540@uah.edu",
+    "role": "Assistant Professor",
+    "department": "Computer Science",
+    "office": "OKT N341"
+  },
+  {
+    "id": "haeyong.chung@uah.edu",
+    "name": "Haeyong Chung, Ph.D.",
+    "email": "haeyong.chung@uah.edu",
+    "role": "Associate Professor",
+    "department": "Computer Science",
+    "office": "OKT N341",
+    "phone": "256.824.5410"
+  },
+  {
+    "id": "sara.graves@uah.edu",
+    "name": "Sara Graves, Ph.D.",
+    "email": "sara.graves@uah.edu",
+    "role": "Director, Information Technology & Systems Center; University Professor",
+    "department": "Computer Science",
+    "office": "OKT S339A",
+    "phone": "256.824.6064"
+  },
+  {
+    "id": "hauensj1@uah.edu",
+    "name": "Jacob Hauenstein, Ph.D.",
+    "email": "hauensj1@uah.edu",
+    "role": "Assistant Professor",
+    "department": "Computer Science",
+    "office": "OKT N352",
+    "phone": "256.824.6186"
+  },
+  {
+    "id": "vineetha.menon@uah.edu",
+    "name": "Vineetha Menon, Ph.D.",
+    "email": "vineetha.menon@uah.edu",
+    "role": "Associate Professor",
+    "department": "Computer Science",
+    "office": "OKT N349",
+    "phone": "256.824.5409"
+  },
+  {
+    "id": "tathagata.mukherjee@uah.edu",
+    "name": "Tathagata Mukherjee, Ph.D.",
+    "email": "tathagata.mukherjee@uah.edu",
+    "role": "Associate Professor",
+    "department": "Computer Science",
+    "office": "OKT N347",
+    "phone": "256.824.6221"
+  },
+  {
+    "id": "newmant@uah.edu",
+    "name": "Timothy S. Newman, Ph.D.",
+    "email": "newmant@uah.edu",
+    "role": "Professor",
+    "department": "Computer Science",
+    "office": "OKT N364",
+    "phone": "256.824.6619
+  },
+  {
+    "id": "rkp0001@uah.edu",
+    "name": "Kevin Preston, M.S.",
+    "email": "rkp0001@uah.edu",
+    "role": "Senior Lecturer",
+    "department": "Computer Science",
+    "office": "OKT N348",
+    "phone": "256.824.6347"
+  },
+  {
+    "id": "jtw0014@uah.edu",
+    "name": "James Williamson",
+    "email": "jtw0014@uah.edu",
+    "role": "Lecturer",
+    "department": "Computer Science",
+    "office": "OKT N340",
+    "phone": "256.824.6017"
+  },
+  {
+    "id": "kim.xu@uah.edu",
+    "name": "Kim Xu, Ph.D.",
+    "email": "kim.xu@uah.edu",
+    "role": "Clinical Assistant Professor",
+    "department": "Computer Science",
+    "office": "OKT N343",
+    "phone": "256.824.6082"
+  },
+  {
+    "id": "fz0001@uah.edu",
+    "name": "Feng Zhu, Ph.D.",
+    "email": "fz0001@uah.edu",
+    "role": "Associate Professor",
+    "department": "Computer Science",
+    "office": "OKT N346",
+    "phone": "256.824.6255"
   }
 ]
