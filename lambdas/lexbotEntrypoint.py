@@ -41,23 +41,24 @@ def lambda_handler(event, context):
             print(f"Resolved value for {slot_name}: {resolved_value}")
 
     #----------------------------------------------------------------------------------------------------
-    #----------------------------------------------------------------------------------------------------    
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('SavedConversations-prod')
-    try:
-        response = table.get_item(
-            Key={'sessionId': sessionId}
-        )
+    #----------------------------------------------------------------------------------------------------
+    if resolved_value is None:    
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table('SavedConversations-prod')
+        try:
+            response = table.get_item(
+                Key={'sessionId': sessionId}
+            )
 
-        # Check if item exists
-        if 'Item' in response:
-            resolved_value = response['Item'].get('savedResolvedValue')
-            session_attrs["savedResolvedValue"] = resolved_value
-        else:
-            print(f"No conversation found for sessionId: {sessionId}")
+            # Check if item exists
+            if 'Item' in response:
+                resolved_value = response['Item'].get('savedResolvedValue')
+                session_attrs["savedResolvedValue"] = resolved_value
+            else:
+                print(f"No conversation found for sessionId: {sessionId}")
 
-    except ClientError as e:
-        print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
+        except ClientError as e:
+            print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
 
