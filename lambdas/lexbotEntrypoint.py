@@ -1,5 +1,6 @@
 import json
 import boto3
+from botocore.exceptions import ClientError
 from datetime import datetime
 from lambdas.heuristics.heuristics import can_reuse_subject
 
@@ -39,6 +40,30 @@ def lambda_handler(event, context):
                 session_attrs["savedResolvedValue"] = resolved_value  # update saved subject value
             print(f"Resolved value for {slot_name}: {resolved_value}")
 
+    #----------------------------------------------------------------------------------------------------
+    #----------------------------------------------------------------------------------------------------
+    # Check if old Session has been reopened
+    if resolved_value is None:    
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table('SavedConversations-prod')
+        try:
+            response = table.get_item(
+                Key={'sessionId': sessionId}
+            )
+
+            # Check if item exists
+            if 'Item' in response:
+                resolved_value = response['Item'].get('savedResolvedValue')
+                session_attrs["savedResolvedValue"] = resolved_value
+                logs.extend(response['Item'].get('conversation', []))
+            else:
+                print(f"No conversation found for sessionId: {sessionId}")
+
+        except ClientError as e:
+            print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
+    #----------------------------------------------------------------------------------------------------
+    #----------------------------------------------------------------------------------------------------
+
     # Return back to Lex and invoke slot prompt asking user to specify slot value
     if resolved_value is None:
         if can_reuse_subject(intent_name) and "savedResolvedValue" in session_attrs:
@@ -60,6 +85,7 @@ def lambda_handler(event, context):
 
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
+    # Check if intent is to get a map image
     if (intent_name == "GetMap"):
         session_attrs["location"] = resolved_value
         return {

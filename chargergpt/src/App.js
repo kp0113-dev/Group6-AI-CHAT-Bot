@@ -16,7 +16,7 @@ export default function App() {
   const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
   const LOCALE = window._env_?.LOCALE_ID || "en_US";
 
-  const sessionId = useMemo(() => "user-" + Date.now(), []);
+const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
 
   // Configure AWS credentials on mount
   useEffect(() => {
@@ -77,9 +77,10 @@ export default function App() {
         botId: BOT_ID,
         botAliasId: BOT_ALIAS,
         localeId: LOCALE,
-        sessionId,
+        sessionId: currentSessionId,
         text,
       };
+
 
       lexruntime.recognizeText(params, async (err, data) => {
         if (err) {
@@ -155,8 +156,13 @@ export default function App() {
   const handleRestoreChat = async (index) => {
     const targetSessionId = sessionIDs[index];
     if (!targetSessionId) return;
-
+  
     try {
+      // set Lex session to the selected chat
+      setCurrentSessionId(targetSessionId);
+      console.log("Switched to session:", targetSessionId);
+  
+      // Restore from DynamoDB (optional if you want history shown)
       const data = await invokeLambda("restoreChats-prod", { sessionId: targetSessionId });
       if (data.conversation) {
         setMessages([]); // Clear current chat
@@ -169,6 +175,7 @@ export default function App() {
       console.error("Failed to restore chat:", err);
     }
   };
+
 
   // -------------------------------
   // JSX rendering
