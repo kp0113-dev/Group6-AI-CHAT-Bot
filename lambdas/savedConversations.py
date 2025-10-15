@@ -43,7 +43,8 @@ def lambda_handler(event, context):
                 "endedAt": ended_at,
                 "conversation": new_conversation,
                 "savedResolvedValue": saved_resolved_value,
-                "expirationTime": ttl_value
+                "expirationTime": ttl_value,
+                "GSI_PK": "Session"
             }
             table.put_item(Item=item)
 
