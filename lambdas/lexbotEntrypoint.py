@@ -44,8 +44,15 @@ def lambda_handler(event, context):
         if can_reuse_subject(intent_name) and "savedResolvedValue" in session_attrs:
             resolved_value = session_attrs["savedResolvedValue"]
         else:
+            logs.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "userMessage": user_input,
+                "botMessage": response_text
+            })
+            session_attrs["conversationLogs"] = json.dumps(logs)
             return {
                 "sessionState": {
+                    "sessionAttributes": session_attrs,
                     "dialogAction": {"type": "Delegate"},
                     "intent": event["sessionState"]["intent"]
                 }

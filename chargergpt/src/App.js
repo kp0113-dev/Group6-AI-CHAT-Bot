@@ -5,19 +5,17 @@ import { getMapImageUrl } from "./aws/s3Helper";
 const AWS = window.AWS;
 
 export default function App() {
-  // State variables for chat messages, user input, and typing animation
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionIDs, setSessionIDs] = useState([null, null, null]);
 
-  // Environment variables injected at runtime
   const REGION = window._env_?.REGION;
   const IDPOOL = window._env_?.IDENTITY_POOL_ID;
   const BOT_ID = window._env_?.BOT_ID;
   const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
   const LOCALE = window._env_?.LOCALE_ID || "en_US";
 
-  // Generate a unique session ID for each user session
   const sessionId = useMemo(() => "user-" + Date.now(), []);
 
   // Configure AWS credentials on mount
@@ -29,12 +27,10 @@ export default function App() {
     });
   }, [REGION, IDPOOL]);
 
-  // Helper to append a new message to chat
   const appendMessage = (txt, cls) => {
     setMessages((prev) => [...prev, { txt, cls }]);
   };
 
-  // Displays a message one character at a time (typing effect)
   const appendTypingMessage = (fullText, cls) => {
     let i = 0;
     const baseMessage = { txt: "", cls };
@@ -52,7 +48,6 @@ export default function App() {
         return updated;
       });
 
-      // Stop typing animation once message is complete
       if (i === fullText.length) {
         clearInterval(interval);
         setIsTyping(false);
@@ -60,7 +55,7 @@ export default function App() {
     }, 30);
   };
 
-  // Handles sending user messages to Lex
+  // Send message to Lex
   const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -70,7 +65,6 @@ export default function App() {
     appendMessage("You: " + text, "user");
     setIsTyping(true);
 
-    // Retrieve temporary AWS credentials before making Lex call
     AWS.config.credentials.get(async (err) => {
       if (err) {
         appendTypingMessage("Error: " + err.message, "bot");
@@ -87,19 +81,16 @@ export default function App() {
         text,
       };
 
-      // Send text input to Lex bot
       lexruntime.recognizeText(params, async (err, data) => {
         if (err) {
           console.error(err);
           appendTypingMessage("Error: " + err.message, "bot");
         } else {
-          // Append Lex response messages
           if (data.messages && data.messages.length) {
             const botReply = data.messages.map((m) => m.content).join(" ");
             appendTypingMessage("Bot: " + botReply, "bot");
           }
 
-          // If Lex returns a 'location' attribute, show a map image
           const location = data.sessionState?.sessionAttributes?.location;
           if (location) {
             try {
@@ -126,6 +117,62 @@ export default function App() {
     });
   };
 
+  // -------------------------------
+  // Lambda invocation functions
+  // -------------------------------
+
+  const invokeLambda = (functionName, payload) =>
+    new Promise((resolve, reject) => {
+      const lambda = new AWS.Lambda();
+      lambda.invoke(
+        {
+          FunctionName: functionName,
+          Payload: JSON.stringify(payload),
+        },
+        (err, data) => {
+          if (err) return reject(err);
+          try {
+            const parsed = JSON.parse(data.Payload);
+            resolve(parsed);
+          } catch (parseErr) {
+            reject(parseErr);
+          }
+        }
+      );
+    });
+
+  // Retrieve the 3 most recent session IDs
+  const handleRefresh = async () => {
+    try {
+      const data = await invokeLambda("retrieveSessionIDs-prod", {});
+      setSessionIDs(data.sessionIds || [null, null, null]);
+    } catch (err) {
+      console.error("Failed to retrieve session IDs:", err);
+    }
+  };
+
+  // Restore a chat by sessionID
+  const handleRestoreChat = async (index) => {
+    const targetSessionId = sessionIDs[index];
+    if (!targetSessionId) return;
+
+    try {
+      const data = await invokeLambda("restoreChats-prod", { sessionId: targetSessionId });
+      if (data.conversation) {
+        setMessages([]); // Clear current chat
+        data.conversation.forEach((msg) => {
+          if (msg.M.userMessage) appendMessage("You: " + msg.M.userMessage.S, "user");
+          if (msg.M.botMessage) appendMessage("Bot: " + msg.M.botMessage.S, "bot");
+        });
+      }
+    } catch (err) {
+      console.error("Failed to restore chat:", err);
+    }
+  };
+
+  // -------------------------------
+  // JSX rendering
+  // -------------------------------
   return (
     <div
       id="chat"
@@ -141,7 +188,15 @@ export default function App() {
         boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
       }}
     >
-      {/* Chat message display area */}
+      {/* Sidebar buttons */}
+      <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>
+        <button onClick={handleRefresh}>Refresh</button>
+        <button onClick={() => handleRestoreChat(0)}>Chat 1</button>
+        <button onClick={() => handleRestoreChat(1)}>Chat 2</button>
+        <button onClick={() => handleRestoreChat(2)}>Chat 3</button>
+      </div>
+
+      {/* Chat messages */}
       <div
         id="messages"
         style={{
@@ -155,10 +210,8 @@ export default function App() {
           backgroundColor: "#fafafa",
         }}
       >
-        {/* Render each message (text or image) */}
         {messages.map((m, i) => {
           if (m.type === "image") {
-            // Map image message
             return (
               <div
                 key={i}
@@ -179,23 +232,17 @@ export default function App() {
               </div>
             );
           }
-          // Regular text message
           return (
             <div
               key={i}
               className={m.cls}
-              style={{
-                margin: "8px 0",
-                whiteSpace: "pre-wrap",
-                lineHeight: "1.4",
-              }}
+              style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: "1.4" }}
             >
               {m.txt}
             </div>
           );
         })}
 
-        {/* Typing indicator animation */}
         {isTyping && (
           <div className="typing-indicator">
             <span></span>
@@ -205,13 +252,10 @@ export default function App() {
         )}
       </div>
 
-      {/* Input form for sending new messages */}
+      {/* Input form */}
       <form
         onSubmit={handleSend}
-        style={{
-          display: "flex",
-          width: "700px",
-        }}
+        style={{ display: "flex", width: "700px" }}
       >
         <input
           value={input}
