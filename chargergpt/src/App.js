@@ -144,7 +144,7 @@ export default function App() {
   // Retrieve the 3 most recent session IDs
   const handleRefresh = async () => {
     try {
-      const data = await invokeLambda("retrieveSessionIDs", {});
+      const data = await invokeLambda("retrieveSessionIDs-prod", {});
       setSessionIDs(data.sessionIds || [null, null, null]);
     } catch (err) {
       console.error("Failed to retrieve session IDs:", err);
@@ -157,7 +157,7 @@ export default function App() {
     if (!targetSessionId) return;
 
     try {
-      const data = await invokeLambda("restoreChats", { sessionId: targetSessionId });
+      const data = await invokeLambda("restoreChats-prod", { sessionId: targetSessionId });
       if (data.conversation) {
         setMessages([]); // Clear current chat
         data.conversation.forEach((msg) => {
