@@ -1,5 +1,6 @@
 import json
 import boto3
+from botocore.exceptions import ClientError
 from datetime import datetime
 from lambdas.heuristics.heuristics import can_reuse_subject
 
@@ -38,6 +39,27 @@ def lambda_handler(event, context):
                 resolved_value = slots["location"]["value"].get("originalValue")
                 session_attrs["savedResolvedValue"] = resolved_value  # update saved subject value
             print(f"Resolved value for {slot_name}: {resolved_value}")
+
+    #----------------------------------------------------------------------------------------------------
+    #----------------------------------------------------------------------------------------------------    
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('SavedConversations-prod')
+    try:
+        response = table.get_item(
+            Key={'sessionId': sessionId}
+        )
+
+        # Check if item exists
+        if 'Item' in response:
+            resolved_value = response['Item'].get('savedResolvedValue')
+            session_attrs["savedResolvedValue"] = resolved_value
+        else:
+            print(f"No conversation found for sessionId: {sessionId}")
+
+    except ClientError as e:
+        print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
+    #----------------------------------------------------------------------------------------------------
+    #----------------------------------------------------------------------------------------------------
 
     # Return back to Lex and invoke slot prompt asking user to specify slot value
     if resolved_value is None:
