@@ -2,7 +2,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('SavedConversations')
+table = dynamodb.Table('SavedConversations-prod')
 
 def lambda_handler(event, context):
     print ("we got here 2")
