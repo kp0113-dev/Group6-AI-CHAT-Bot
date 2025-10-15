@@ -163,7 +163,7 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
       console.log("Switched to session:", targetSessionId);
   
       // Restore from DynamoDB (optional if you want history shown)
-      const data = await invokeLambda("restoreChats", { sessionId: targetSessionId });
+      const data = await invokeLambda("restoreChats-prod", { sessionId: targetSessionId });
       if (data.conversation) {
         setMessages([]); // Clear current chat
         data.conversation.forEach((msg) => {
