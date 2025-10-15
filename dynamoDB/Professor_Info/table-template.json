@@ -1,10 +1,10 @@
 {
-  "TableName": "ProfessorInfo-dev",
+  "TableName": "ProfessorInfo",
   "AttributeDefinitions": [
-    {"AttributeName": "id", "AttributeType": "S"}
+    {"AttributeName": "value", "AttributeType": "S"}
   ],
   "KeySchema": [
-    {"AttributeName": "id", "KeyType": "HASH"}
+    {"AttributeName": "value", "KeyType": "HASH"}
   ],
   "BillingMode": "PAY_PER_REQUEST"
 }
