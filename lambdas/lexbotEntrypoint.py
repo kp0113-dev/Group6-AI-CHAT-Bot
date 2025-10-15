@@ -54,6 +54,7 @@ def lambda_handler(event, context):
             if 'Item' in response:
                 resolved_value = response['Item'].get('savedResolvedValue')
                 session_attrs["savedResolvedValue"] = resolved_value
+                logs.extend(response['Item'].get('conversation', []))
             else:
                 print(f"No conversation found for sessionId: {sessionId}")
 
