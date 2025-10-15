@@ -2,6 +2,7 @@
 REUSE_LAST_SUBJECT = {
     "BuildingInfo-GetTime": True,
     "BuildingInfo-GetLocation": True,
+    "ProfessorInfo-GetProfessorInfo": True,
     "GetMap": True,
 }
 
