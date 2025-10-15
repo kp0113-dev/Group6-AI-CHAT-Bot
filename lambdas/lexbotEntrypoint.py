@@ -42,6 +42,7 @@ def lambda_handler(event, context):
 
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
+    # Check if old Session has been reopened
     if resolved_value is None:    
         dynamodb = boto3.resource('dynamodb')
         table = dynamodb.Table('SavedConversations-prod')
@@ -84,6 +85,7 @@ def lambda_handler(event, context):
 
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
+    # Check if intent is to get a map image
     if (intent_name == "GetMap"):
         session_attrs["location"] = resolved_value
         return {
