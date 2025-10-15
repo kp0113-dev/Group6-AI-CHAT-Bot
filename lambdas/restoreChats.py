@@ -10,7 +10,7 @@ def lambda_handler(event, context):
     
     try:
         response = dynamodb.get_item(
-            TableName="SavedConversations",
+            TableName="SavedConversations-prod",
             Key={"sessionId": {"S": session_id}},
             ProjectionExpression="conversation"
         )
