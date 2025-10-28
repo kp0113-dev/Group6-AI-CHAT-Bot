@@ -118,6 +118,16 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
     });
   };
 
+   // -------------------------------
+  // NEW: Reset Chat function
+  // -------------------------------
+  const handleResetChat = () => {
+    setMessages([]);
+    const newId = "user-" + Date.now();
+    setCurrentSessionId(newId);
+    console.log("New session started:", newId);
+  };
+
   // -------------------------------
   // Lambda invocation functions
   // -------------------------------
@@ -201,6 +211,10 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
         <button onClick={() => handleRestoreChat(0)}>Chat 1</button>
         <button onClick={() => handleRestoreChat(1)}>Chat 2</button>
         <button onClick={() => handleRestoreChat(2)}>Chat 3</button>
+        {/* NEW: Reset button */}
+        <button style={{ backgroundColor: "#f88" }} onClick={handleResetChat}>
+          New Chat
+        </button>
       </div>
 
       {/* Chat messages */}
