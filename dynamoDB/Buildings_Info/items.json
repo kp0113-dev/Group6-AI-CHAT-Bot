@@ -1,463 +1,364 @@
 [
-    {
-        "value":  "Business Services Building",
-        "building_id":  "bsb",
-        "address":  "Business Services Bldg, John Wright Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/business-services"
-                    ]
-    },
-    {
-        "value":  "Cramer Research Hall",
-        "building_id":  "crh",
-        "address":  "320 Sparkman Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/cspar/contact"
-                    ]
-    },
-    {
-        "value":  "Engineering Building",
-        "building_id":  "eng",
-        "address":  "Engineering Bldg, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/engineering"
-                    ]
-    },
-    {
-        "value":  "Fraternity Sorority Row",
-        "building_id":  "fsr",
-        "address":  "Fraternity and Sorority Row NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Materials Science Building",
-        "building_id":  "msb",
-        "address":  "UAH Materials Science Building (MSB), John Wright Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/science/contacts"
-                    ]
-    },
-    {
-        "value":  "Morton Hall",
-        "building_id":  "mor",
-        "address":  "Morton Hall (MOR), 301 Sparkman Dr NW #116A, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/arts-humanities/languages/contact"
-                    ]
-    },
-    {
-        "value":  "Optics Building",
-        "building_id":  "opb",
-        "address":  "Optics Bldg, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/science/physics"
-                    ]
-    },
-    {
-        "value":  "Roberts Hall",
-        "building_id":  "rob",
-        "address":  "1510 Ben Graves Dr NW, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "SWIRLL",
-        "building_id":  "swi",
-        "address":  "4801 Bradford Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Shelby Center for Science and Technology",
-        "building_id":  "sst",
-        "address":  "Shelby Center (SST), Shelby Center for Science and Technology, 301 Sparkman Dr NW, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/biology/contact"
-                    ]
-    },
-    {
-        "value":  "Spragins Hall",
-        "building_id":  "spr",
-        "address":  "205 Spragins Hall, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Business Services Building",
-        "building_id":  "bsb",
-        "address":  "Business Services Bldg, John Wright Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/business-services"
-                    ]
-    },
-    {
-        "value":  "Cramer Research Hall",
-        "building_id":  "crh",
-        "address":  "320 Sparkman Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/cspar/contact"
-                    ]
-    },
-    {
-        "value":  "Engineering Building",
-        "building_id":  "eng",
-        "address":  "Engineering Bldg, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/engineering"
-                    ]
-    },
-    {
-        "value":  "Fraternity Sorority Row",
-        "building_id":  "fsr",
-        "address":  "Fraternity and Sorority Row NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Materials Science Building",
-        "building_id":  "msb",
-        "address":  "UAH Materials Science Building (MSB), John Wright Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/science/contacts"
-                    ]
-    },
-    {
-        "value":  "Morton Hall",
-        "building_id":  "mor",
-        "address":  "Morton Hall (MOR), 301 Sparkman Dr NW #116A, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/arts-humanities/languages/contact"
-                    ]
-    },
-    {
-        "value":  "Optics Building",
-        "building_id":  "opb",
-        "address":  "Optics Bldg, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/science/physics"
-                    ]
-    },
-    {
-        "value":  "Roberts Hall",
-        "building_id":  "rob",
-        "address":  "1510 Ben Graves Dr NW, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "SWIRLL",
-        "building_id":  "swi",
-        "address":  "4801 Bradford Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Shelby Center for Science and Technology",
-        "building_id":  "sst",
-        "address":  "Shelby Center (SST), Shelby Center for Science and Technology, 301 Sparkman Dr NW, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/biology/contact"
-                    ]
-    },
-    {
-        "value":  "Spragins Hall",
-        "building_id":  "spr",
-        "address":  "205 Spragins Hall, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Student Services Building",
-        "building_id":  "ssb",
-        "address":  "301 Sparkman Drive, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/isss/contact"
-                    ]
-    },
-    {
-        "value":  "Union Grove Gallery",
-        "building_id":  "ugg",
-        "address":  "Union Grove Gallery and Meeting Hall (UGG), University Cir, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "University Fitness Center",
-        "building_id":  "ufc",
-        "address":  "500 John Wright Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Wilson Hall",
-        "building_id":  "wil",
-        "address":  "Wilson Hall (WIL), 301 Sparkman Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "von Braun Research Hall",
-        "building_id":  "vbh",
-        "address":  "Wernher Von Braun Research Hall, 1101 John Wright Dr NW, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    },
-    {
-        "value":  "Bevill Center",
-        "building_id":  "bev",
-        "address":  "550 Sparkman Drive, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/images/admissions/orientation/new-student-orientation-guide.pdf"
-                    ]
-    },
-    {
-        "value":  "Business Administration Building",
-        "building_id":  "bab",
-        "address":  "800 Ben Graves Drive NW, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/cob/directions"
-                    ]
-    },
-    {
-        "value":  "Central Campus Residence Hall",
-        "building_id":  "cch",
-        "address":  "1000 Ben Graves Drive, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/housing/halls/central-campus-residence-hall"
-                    ]
-    },
-    {
-        "value":  "Charger Union",
-        "building_id":  "cgu",
-        "address":  "4705 Holmes Ave, Huntsville, AL 35899",
-        "hours":  {
-                      "timezone":  "America/Chicago",
-                      "regular":  {
-                                      "monday":  "07:00-01:00",
-                                      "tuesday":  "07:00-01:00",
-                                      "wednesday":  "07:00-01:00",
-                                      "thursday":  "07:00-01:00",
-                                      "friday":  "07:00-01:00",
-                                      "saturday":  "07:00-01:00",
-                                      "sunday":  "07:00-01:00"
-                                  },
-                      "exceptions":  [
+  {
+      "value":  "Business Services Building",
+      "building_id":  "bsb",
+      "address":  "Business Services Bldg, John Wright Dr NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/business-services"
+                  ]
+  },
+  {
+      "value":  "Cramer Research Hall",
+      "building_id":  "crh",
+      "address":  "320 Sparkman Dr NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/cspar/contact"
+                  ]
+  },
+  {
+      "value":  "Engineering Building",
+      "building_id":  "eng",
+      "address":  "Engineering Bldg, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/engineering"
+                  ]
+  },
+  {
+      "value":  "Fraternity Sorority Row",
+      "building_id":  "fsr",
+      "address":  "Fraternity and Sorority Row NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "Materials Science Building",
+      "building_id":  "msb",
+      "address":  "UAH Materials Science Building (MSB), John Wright Dr NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/science/contacts"
+                  ]
+  },
+  {
+      "value":  "Morton Hall",
+      "building_id":  "mor",
+      "address":  "Morton Hall (MOR), 301 Sparkman Dr NW #116A, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/arts-humanities/languages/contact"
+                  ]
+  },
+  {
+      "value":  "Optics Building",
+      "building_id":  "opb",
+      "address":  "Optics Bldg, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/science/physics"
+                  ]
+  },
+  {
+      "value":  "Roberts Hall",
+      "building_id":  "rob",
+      "address":  "1510 Ben Graves Dr NW, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "SWIRLL",
+      "building_id":  "swi",
+      "address":  "4801 Bradford Dr NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "Shelby Center for Science and Technology",
+      "building_id":  "sst",
+      "address":  "Shelby Center (SST), Shelby Center for Science and Technology, 301 Sparkman Dr NW, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/biology/contact"
+                  ]
+  },
+  {
+      "value":  "Spragins Hall",
+      "building_id":  "spr",
+      "address":  "205 Spragins Hall, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "Student Services Building",
+      "building_id":  "ssb",
+      "address":  "301 Sparkman Drive, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/isss/contact"
+                  ]
+  },
+  {
+      "value":  "Union Grove Gallery",
+      "building_id":  "ugg",
+      "address":  "Union Grove Gallery and Meeting Hall (UGG), University Cir, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "University Fitness Center",
+      "building_id":  "ufc",
+      "address":  "500 John Wright Dr NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "Wilson Hall",
+      "building_id":  "wil",
+      "address":  "Wilson Hall (WIL), 301 Sparkman Dr NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "von Braun Research Hall",
+      "building_id":  "vbh",
+      "address":  "Wernher Von Braun Research Hall, 1101 John Wright Dr NW, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  },
+  {
+      "value":  "Bevill Center",
+      "building_id":  "bev",
+      "address":  "550 Sparkman Drive, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/images/admissions/orientation/new-student-orientation-guide.pdf"
+                  ]
+  },
+  {
+      "value":  "Business Administration Building",
+      "building_id":  "bab",
+      "address":  "800 Ben Graves Drive NW, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/cob/directions"
+                  ]
+  },
+  {
+      "value":  "Central Campus Residence Hall",
+      "building_id":  "cch",
+      "address":  "1000 Ben Graves Drive, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/housing/halls/central-campus-residence-hall"
+                  ]
+  },
+  {
+      "value":  "Charger Union",
+      "building_id":  "cgu",
+      "address":  "4705 Holmes Ave, Huntsville, AL 35899",
+      "hours":  {
+                    "timezone":  "America/Chicago",
+                    "regular":  {
+                                    "monday":  "07:00-01:00",
+                                    "tuesday":  "07:00-01:00",
+                                    "wednesday":  "07:00-01:00",
+                                    "thursday":  "07:00-01:00",
+                                    "friday":  "07:00-01:00",
+                                    "saturday":  "07:00-01:00",
+                                    "sunday":  "07:00-01:00"
+                                },
+                    "exceptions":  [
 
-                                     ]
-                  },
-        "sources":  [
-                        "https://www.uah.edu/chargerunion/hours-of-operation",
-                        "https://www.uah.edu/chargerunion"
-                    ]
-    },
-    {
-        "value":  "Charger Village",
-        "building_id":  "cgv",
-        "address":  "601 John Wright Drive, Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/housing/halls/charger-village-original"
-                    ]
-    },
-    {
-        "value":  "Conference Training Center",
-        "building_id":  "ctc",
-        "address":  "1410 Ben Graves Drive NW, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/counseling-center"
-                    ]
-    },
-    {
-        "value":  "Early Learning Center",
-        "building_id":  "elc",
-        "address":  "4503 University Dr NW, Huntsville, AL 35816",
-        "hours":  null
-    },
-    {
-        "value":  "Frank Franz Residence Hall",
-        "building_id":  "ffh",
-        "address":  "1301 Ben Graves Drive, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/housing/halls/frank-franz"
-                    ]
-    },
-    {
-        "value":  "Intermodal Parking Facility",
-        "building_id":  "imf",
-        "address":  "501 John Wright Drive, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/police/contact"
-                    ]
-    },
-    {
-        "value":  "Invention to Innovation Center",
-        "building_id":  "i2c",
-        "address":  "850 Ben Graves Drive, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/research/otc"
-                    ]
-    },
-    {
-        "value":  "Johnson Research Center",
-        "building_id":  "jrc",
-        "address":  "1030 J Wright Dr, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/aeperl"
-                    ]
-    },
-    {
-        "value":  "North Campus Residence Hall",
-        "building_id":  "nch",
-        "address":  "1303 Ben Graves Drive, Huntsville, AL 35816",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/housing/halls/north"
-                    ]
-    },
-    {
-        "value":  "Nursing Building",
-        "building_id":  "nur",
-        "address":  "1610 Ben Graves Drive, Huntsville, AL 35899",
-        "hours":  {
-                      "timezone":  "America/Chicago",
-                      "regular":  {
-                                      "monday":  "06:30-18:00",
-                                      "tuesday":  "06:30-18:00",
-                                      "wednesday":  "06:30-18:00",
-                                      "thursday":  "06:30-18:00",
-                                      "friday":  "06:30-18:00",
-                                      "saturday":  null,
-                                      "sunday":  null
-                                  },
-                      "exceptions":  [
+                                    ]
+                },
+      "sources":  [
+                      "https://www.uah.edu/chargerunion/hours-of-operation",
+                      "https://www.uah.edu/chargerunion"
+                  ]
+  },
+  {
+      "value":  "Charger Village",
+      "building_id":  "cgv",
+      "address":  "601 John Wright Drive, Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/housing/halls/charger-village-original"
+                  ]
+  },
+  {
+      "value":  "Conference Training Center",
+      "building_id":  "ctc",
+      "address":  "1410 Ben Graves Drive NW, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/counseling-center"
+                  ]
+  },
+  {
+      "value":  "Early Learning Center",
+      "building_id":  "elc",
+      "address":  "4503 University Dr NW, Huntsville, AL 35816",
+      "hours":  null
+  },
+  {
+      "value":  "Frank Franz Residence Hall",
+      "building_id":  "ffh",
+      "address":  "1301 Ben Graves Drive, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/housing/halls/frank-franz"
+                  ]
+  },
+  {
+      "value":  "Intermodal Parking Facility",
+      "building_id":  "imf",
+      "address":  "501 John Wright Drive, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/police/contact"
+                  ]
+  },
+  {
+      "value":  "Invention to Innovation Center",
+      "building_id":  "i2c",
+      "address":  "850 Ben Graves Drive, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/research/otc"
+                  ]
+  },
+  {
+      "value":  "Johnson Research Center",
+      "building_id":  "jrc",
+      "address":  "1030 J Wright Dr, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/aeperl"
+                  ]
+  },
+  {
+      "value":  "North Campus Residence Hall",
+      "building_id":  "nch",
+      "address":  "1303 Ben Graves Drive, Huntsville, AL 35816",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/housing/halls/north"
+                  ]
+  },
+  {
+      "value":  "Nursing Building",
+      "building_id":  "nur",
+      "address":  "1610 Ben Graves Drive, Huntsville, AL 35899",
+      "hours":  {
+                    "timezone":  "America/Chicago",
+                    "regular":  {
+                                    "monday":  "06:30-18:00",
+                                    "tuesday":  "06:30-18:00",
+                                    "wednesday":  "06:30-18:00",
+                                    "thursday":  "06:30-18:00",
+                                    "friday":  "06:30-18:00",
+                                    "saturday":  null,
+                                    "sunday":  null
+                                },
+                    "exceptions":  [
 
-                                     ]
-                  },
-        "sources":  [
-                        "https://www.uah.edu/nursing/faculty-staff/laura-graham",
-                        "https://www.uah.edu/nursing/visit"
-                    ]
-    },
-    {
-        "value":  "Olin B. King Technology Hall",
-        "building_id":  "okt",
-        "address":  "5000 Technology Drive, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/prc/about"
-                    ]
-    },
-    {
-        "value":  "Physical Plant Building",
-        "building_id":  "ppb",
-        "address":  "1000 John Wright Drive NW, Huntsville, AL 35899",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/facilities"
-                    ]
-    },
-    {
-        "value":  "Shelbie King Hall",
-        "building_id":  "skh",
-        "address":  "188 Sparkman Drive NW, Huntsville, AL 35805",
-        "hours":  {
-                      "timezone":  "America/Chicago",
-                      "regular":  {
-                                      "monday":  "08:15-17:00",
-                                      "tuesday":  "08:15-17:00",
-                                      "wednesday":  "08:15-17:00",
-                                      "thursday":  "08:15-17:00",
-                                      "friday":  "08:15-17:00",
-                                      "saturday":  "closed",
-                                      "sunday":  "closed"
-                                  },
-                      "exceptions":  [
+                                    ]
+                },
+      "sources":  [
+                      "https://www.uah.edu/nursing/faculty-staff/laura-graham",
+                      "https://www.uah.edu/nursing/visit"
+                  ]
+  },
+  {
+      "value":  "Olin B. King Technology Hall",
+      "building_id":  "okt",
+      "address":  "5000 Technology Drive, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/prc/about"
+                  ]
+  },
+  {
+      "value":  "Physical Plant Building",
+      "building_id":  "ppb",
+      "address":  "1000 John Wright Drive NW, Huntsville, AL 35899",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/facilities"
+                  ]
+  },
+  {
+      "value":  "Shelbie King Hall",
+      "building_id":  "skh",
+      "address":  "188 Sparkman Drive NW, Huntsville, AL 35805",
+      "hours":  {
+                    "timezone":  "America/Chicago",
+                    "regular":  {
+                                    "monday":  "08:15-17:00",
+                                    "tuesday":  "08:15-17:00",
+                                    "wednesday":  "08:15-17:00",
+                                    "thursday":  "08:15-17:00",
+                                    "friday":  "08:15-17:00",
+                                    "saturday":  "closed",
+                                    "sunday":  "closed"
+                                },
+                    "exceptions":  [
 
-                                     ]
-                  },
-        "sources":  [
-                        "https://www.uah.edu/oehs",
-                        "https://www.uah.edu/omc/contact"
-                    ]
-    },
-    {
-        "value":  "Southeast Campus Housing",
-        "building_id":  "sch",
-        "address":  "606 John Wright Dr., Huntsville, AL 35805",
-        "hours":  null,
-        "sources":  [
-                        "https://www.uah.edu/housing/halls/southeast"
-                    ]
-    },
-    {
-        "value":  "Salmon Library",
-        "building_id":  "lib",
-        "address":  "4700 Holmes Ave NW, Huntsville, AL 35805",
-        "hours":  {
-                      "timezone":  "America/Chicago",
-                      "regular":  {
-                                      "monday":  "07:00-01:00",
-                                      "tuesday":  "07:00-01:00",
-                                      "wednesday":  "07:00-01:00",
-                                      "thursday":  "07:00-01:00",
-                                      "friday":  "07:00-01:00",
-                                      "saturday":  "07:00-01:00",
-                                      "sunday":  "07:00-01:00"
-                                  },
-                      "exceptions":  [
+                                    ]
+                },
+      "sources":  [
+                      "https://www.uah.edu/oehs",
+                      "https://www.uah.edu/omc/contact"
+                  ]
+  },
+  {
+      "value":  "Southeast Campus Housing",
+      "building_id":  "sch",
+      "address":  "606 John Wright Dr., Huntsville, AL 35805",
+      "hours":  null,
+      "sources":  [
+                      "https://www.uah.edu/housing/halls/southeast"
+                  ]
+  },
+  {
+      "value":  "Salmon Library",
+      "building_id":  "lib",
+      "address":  "4700 Holmes Ave NW, Huntsville, AL 35805",
+      "hours":  {
+                    "timezone":  "America/Chicago",
+                    "regular":  {
+                                    "monday":  "07:00-01:00",
+                                    "tuesday":  "07:00-01:00",
+                                    "wednesday":  "07:00-01:00",
+                                    "thursday":  "07:00-01:00",
+                                    "friday":  "07:00-01:00",
+                                    "saturday":  "07:00-01:00",
+                                    "sunday":  "07:00-01:00"
+                                },
+                    "exceptions":  [
 
-                                     ]
-                  },
-        "sources":  [
-                        "https://www.uah.edu/map"
-                    ]
-    }
+                                    ]
+                },
+      "sources":  [
+                      "https://www.uah.edu/map"
+                  ]
+  }
 ]
