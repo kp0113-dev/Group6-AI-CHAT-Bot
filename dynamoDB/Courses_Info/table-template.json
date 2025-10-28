@@ -1,0 +1,11 @@
+{
+  "TableName": "CoursesInfo",
+  "AttributeDefinitions": [
+    {"AttributeName": "value", "AttributeType": "S"}
+  ],
+  "KeySchema": [
+    {"AttributeName": "value", "KeyType": "HASH"}
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}
+

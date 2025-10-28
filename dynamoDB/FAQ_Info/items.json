@@ -1,0 +1,52 @@
+[
+  {
+    "value": "Parking Policy",
+    "answer": "All vehicles parked on campus must display a valid UAH parking permit. Permits can be purchased online via the UAH Parking Portal. Visitor parking is available in designated areas.",
+    "source": "https://www.uah.edu/parking"
+  },
+  {
+    "value": "Charger ID Card",
+    "answer": "Charger ID cards are issued at the Charger Card Office located in the Charger Union. Bring a valid government-issued ID.",
+    "source": "https://www.uah.edu/charger-card"
+  },
+  {
+    "value": "Tuition Payment",
+    "answer": "Tuition payments can be made online through the UAH Student Account Center or in person at the Bursar's Office in the Student Services Building.",
+    "source": "https://www.uah.edu/bursar"
+  },
+  {
+    "value": "Class Drop Deadline",
+    "answer": "The last day to drop a class varies by semester. Check the Academic Calendar for specific dates.",
+    "source": "https://www.uah.edu/registrar/academic-calendar"
+  },
+  {
+    "value": "Campus Wi-Fi",
+    "answer": "Students should connect to the 'UAH' Wi-Fi network using their Charger ID credentials.",
+    "source": "https://www.uah.edu/oit/wifi"
+  },
+  {
+    "value": "Library Hours",
+    "answer": "Salmon Library is generally open Monday–Thursday 7:30am–10pm, Friday 7:30am–6pm, Saturday 10am–6pm, and Sunday 1pm–10pm. Hours vary by semester.",
+    "source": "https://www.uah.edu/library"
+  },
+  {
+    "value": "Campus Emergency",
+    "answer": "In any emergency, call UAH Police at (256) 824-6596 or dial 911. UAH also uses RAVE Alerts for campus emergencies.",
+    "source": "https://www.uah.edu/police/emergency"
+  },
+  {
+    "value": "Academic Advising",
+    "answer": "Advising offices are located in Morton Hall. Contact your college’s advising office to schedule an appointment.",
+    "source": "https://www.uah.edu/advising"
+  },
+  {
+    "value": "Financial Aid",
+    "answer": "Submit the FAFSA at fafsa.gov, then review your aid package in your UAH student account. The Financial Aid Office is located in the Student Services Building.",
+    "source": "https://www.uah.edu/financial-aid"
+  },
+  {
+    "value": "Student Code of Conduct",
+    "answer": "Students are expected to uphold UAH’s Code of Student Conduct, which includes academic integrity, respect, and community responsibility.",
+    "source": "https://www.uah.edu/student-conduct"
+  }
+]
