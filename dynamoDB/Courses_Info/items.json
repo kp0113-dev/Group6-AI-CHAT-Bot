@@ -1,0 +1,152 @@
+[
+  {
+    "value": "Intro to Computers & Programming",
+    "number": "CS 100",
+    "description": "An introductory course on computer fundamentals, basic software concepts, and problem-solving using programming. Designed for students with little or no prior experience.",
+    "difficulty": "1/5"
+  },
+  {
+    "value": "Intro to C Programming",
+    "number": "CS 102",
+    "description": "Covers fundamental programming concepts including variables, control structures, loops, arrays, and functions using the C language. Focuses on logical thinking and debugging.",
+    "difficulty": "2/5"
+  },
+  {
+    "value": "Intro to Programming Using Java",
+    "number": "CS 103",
+    "description": "An introduction to programming using Java. Topics include syntax, control flow, methods, arrays, and the basics of object-oriented programming.",
+    "difficulty": "2/5"
+  },
+  {
+    "value": "Intro to Computer Science Using Python",
+    "number": "CS 104",
+    "description": "Explores the fundamentals of computer science and programming through the Python language. Covers problem solving, data types, conditionals, loops, and file I/O.",
+    "difficulty": "2/5"
+  },
+  {
+    "value": "Computer Science Seminar",
+    "number": "CS 105",
+    "description": "A first-year seminar introducing students to the field of computer science, study habits for technical majors, and professional opportunities in computing.",
+    "difficulty": "1/5"
+  },
+  {
+    "value": "Computer Science I",
+    "number": "CS 121",
+    "description": "Introduces algorithm development, structured programming, and object-oriented design using C++. Emphasizes software development, testing, and problem-solving.",
+    "difficulty": "2/5"
+  },
+  {
+    "value": "Introduction to Discrete Structures",
+    "number": "CS 214",
+    "description": "Covers mathematical foundations of computer science including logic, set theory, combinatorics, graphs, and algorithms. Focuses on rigorous reasoning and proofs.",
+    "difficulty": "3/5"
+  },
+  {
+    "value": "Computer Science II: Data Structures",
+    "number": "CS 221",
+    "description": "Covers advanced programming topics and data structures such as linked lists, stacks, queues, trees, and hash tables. Introduces complexity analysis and algorithm efficiency.",
+    "difficulty": "3/5"
+  },
+  {
+    "value": "Computer Organization & Switching Theory",
+    "number": "CS 309",
+    "description": "Examines the logic and design of digital systems including Boolean algebra, logic gates, flip-flops, and combinational/sequential circuit design.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Introduction to Design and Analysis of Algorithms",
+    "number": "CS 317",
+    "description": "Focuses on algorithmic techniques such as divide-and-conquer, greedy algorithms, dynamic programming, and graph algorithms, with emphasis on efficiency and proof of correctness.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Object-Oriented Programming with Java",
+    "number": "CS 321",
+    "description": "A continuation of introductory programming emphasizing object-oriented principles such as inheritance, polymorphism, encapsulation, and design patterns.",
+    "difficulty": "3/5"
+  },
+  {
+    "value": "Web Programming & Application Development",
+    "number": "CS 350",
+    "description": "Introduces web technologies including HTML, CSS, JavaScript, and server-side frameworks. Students design and implement full-stack web applications.",
+    "difficulty": "3/5"
+  },
+  {
+    "value": "Database Systems",
+    "number": "CS 360",
+    "description": "Covers relational database design, normalization, SQL, and data modeling. Students build and query databases and explore modern data storage solutions.",
+    "difficulty": "3/5"
+  },
+  {
+    "value": "Computer Graphics",
+    "number": "CS 370",
+    "description": "Introduces fundamental concepts in 2D and 3D computer graphics including rendering, transformations, modeling, and the use of graphics APIs.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Mobile Application Development",
+    "number": "CS 380",
+    "description": "Focuses on designing and developing applications for mobile devices using modern frameworks. Topics include UI design, sensors, and performance optimization.",
+    "difficulty": "3/5"
+  },
+  {
+    "value": "Digital Computer Architecture",
+    "number": "CS 413",
+    "description": "Explores CPU design, instruction sets, memory hierarchies, and system buses. Students analyze how hardware supports software execution.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Principles of Programming Languages",
+    "number": "CS 424",
+    "description": "Examines programming paradigms including functional, procedural, and logical programming. Topics include syntax, semantics, and language implementation concepts.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Cryptography & Network Security",
+    "number": "CS 430",
+    "description": "Introduces fundamental cryptographic techniques, network protocols, and security principles. Topics include encryption, authentication, and secure system design.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Cloud Computing",
+    "number": "CS 440",
+    "description": "Covers distributed systems, virtualization, and cloud service models. Students explore deployment of scalable applications on major cloud platforms.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Artificial Intelligence",
+    "number": "CS 450",
+    "description": "Covers AI fundamentals such as search algorithms, knowledge representation, reasoning, and machine learning basics. Includes practical implementations and projects.",
+    "difficulty": "5/5"
+  },
+  {
+    "value": "Computer Networks",
+    "number": "CS 460",
+    "description": "Examines data communication principles, network architectures, TCP/IP, routing, and network programming. Includes hands-on lab exercises and simulations.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Software Engineering",
+    "number": "CS 470",
+    "description": "Covers software development methodologies, design patterns, version control, and testing strategies. Students work in teams on a complete software project.",
+    "difficulty": "4/5"
+  },
+  {
+    "value": "Machine Learning",
+    "number": "CS 480",
+    "description": "Introduces supervised and unsupervised learning algorithms including regression, decision trees, clustering, and neural networks. Includes practical model-building assignments.",
+    "difficulty": "5/5"
+  },
+  {
+    "value": "Introduction to Operating Systems",
+    "number": "CS 490",
+    "description": "Explores core OS principles including process scheduling, memory management, file systems, and concurrency. Students write programs simulating OS components.",
+    "difficulty": "5/5"
+  },
+  {
+    "value": "Senior Project: Team Software Design",
+    "number": "CS 499",
+    "description": "A capstone course where students work in teams to design, implement, and present a large-scale software project integrating knowledge from prior coursework.",
+    "difficulty": "4/5"
+  }
+]
