@@ -3,6 +3,8 @@ REUSE_LAST_SUBJECT = {
     "BuildingInfo-GetTime": True,
     "BuildingInfo-GetLocation": True,
     "ProfessorInfo-GetProfessorInfo": True,
+    "FAQInfo-getFAQ": True,
+    "CoursesInfo-getCourse": True,
     "GetMap": True,
 }
 
