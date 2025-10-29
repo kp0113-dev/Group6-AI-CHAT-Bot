@@ -43,24 +43,26 @@ def lambda_handler(event, context):
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
     # Check if old Session has been reopened
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('SavedConversations-prod')
-    try:
-        response = table.get_item(
-            Key={'sessionId': sessionId}
-        )
+    if session_attrs.get("restoredCounter", 0) == 0:
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table('SavedConversations-prod')
+        try:
+            response = table.get_item(
+                Key={'sessionId': sessionId}
+            )
 
-        # Check if item exists
-        if 'Item' in response:
-            if resolved_value is None:
-                resolved_value = response['Item'].get('savedResolvedValue')
-                session_attrs["savedResolvedValue"] = resolved_value
-            logs.extend(response['Item'].get('conversation', []))
-        else:
-            print(f"No conversation found for sessionId: {sessionId}")
+            # Check if item exists
+            if 'Item' in response:
+                if resolved_value is None:
+                    resolved_value = response['Item'].get('savedResolvedValue')
+                    session_attrs["savedResolvedValue"] = resolved_value
+                logs.extend(response['Item'].get('conversation', []))
+                session_attrs["restoredCounter"] = 1
+            else:
+                print(f"No conversation found for sessionId: {sessionId}")
 
-    except ClientError as e:
-        print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
+        except ClientError as e:
+            print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
 
