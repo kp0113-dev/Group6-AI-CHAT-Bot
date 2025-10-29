@@ -43,7 +43,7 @@ def lambda_handler(event, context):
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
     # Check if old Session has been reopened
-    if resolved_value is None:    
+    if session_attrs.get("restoredCounter", 0) == 0:
         dynamodb = boto3.resource('dynamodb')
         table = dynamodb.Table('SavedConversations-prod')
         try:
@@ -53,14 +53,15 @@ def lambda_handler(event, context):
 
             # Check if item exists
             if 'Item' in response:
-                resolved_value = response['Item'].get('savedResolvedValue')
-                session_attrs["savedResolvedValue"] = resolved_value
+                if resolved_value is None:
+                    resolved_value = response['Item'].get('savedResolvedValue')
+                    session_attrs["savedResolvedValue"] = resolved_value
                 logs.extend(response['Item'].get('conversation', []))
             else:
                 print(f"No conversation found for sessionId: {sessionId}")
-
         except ClientError as e:
             print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
+        session_attrs["restoredCounter"] = 1
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { getMapImageUrl } from "./aws/s3Helper";
 
@@ -9,6 +9,10 @@ export default function App() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionIDs, setSessionIDs] = useState([null, null, null]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [theme, setTheme] = useState("theme-auto");
+  const messagesRef = useRef(null);
+  const inputRef = useRef(null);
 
   const REGION = window._env_?.REGION;
   const IDPOOL = window._env_?.IDENTITY_POOL_ID;
@@ -17,6 +21,7 @@ export default function App() {
   const LOCALE = window._env_?.LOCALE_ID || "en_US";
 
 const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
+  const canSend = (input || "").trim().length > 0;
 
   // Configure AWS credentials on mount
   useEffect(() => {
@@ -27,13 +32,43 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
     });
   }, [REGION, IDPOOL]);
 
+  useEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem("chat-theme");
+      if (t) setTheme(t);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    setMessages((prev) => [...prev, { txt: "New chat started", cls: "system", ts: Date.now() }]);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("chat-theme", theme);
+    } catch {}
+  }, [theme]);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = inputRef.current.scrollHeight + "px";
+    }
+  }, [input]);
+
   const appendMessage = (txt, cls) => {
-    setMessages((prev) => [...prev, { txt, cls }]);
+    setMessages((prev) => [...prev, { txt, cls, ts: Date.now() }]);
   };
 
   const appendTypingMessage = (fullText, cls) => {
     let i = 0;
-    const baseMessage = { txt: "", cls };
+    const baseMessage = { txt: "", cls, ts: Date.now() };
     setMessages((prev) => [...prev, baseMessage]);
     setIsTyping(true);
 
@@ -56,10 +91,8 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
   };
 
   // Send message to Lex
-  const handleSend = (e) => {
-    e.preventDefault();
+  const sendCurrent = () => {
     if (!input.trim()) return;
-
     const text = input;
     setInput("");
     appendMessage("You: " + text, "user");
@@ -80,7 +113,6 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
         sessionId: currentSessionId,
         text,
       };
-
 
       lexruntime.recognizeText(params, async (err, data) => {
         if (err) {
@@ -104,6 +136,7 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
                     cls: "bot-map",
                     type: "image",
                     location,
+                    ts: Date.now(),
                   },
                 ]);
               }
@@ -116,6 +149,32 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
         }
       });
     });
+  };
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    sendCurrent();
+  };
+
+  const stripPrefixes = (s) => s.replace(/^You:\s*/i, "").replace(/^Bot:\s*/i, "");
+  const escapeHtml = (s) => s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+  const renderRichText = (s) => {
+    let t = stripPrefixes(s);
+    t = escapeHtml(t);
+    t = t.replace(/```([\s\S]*?)```/g, (m, code) => `<pre><code>${code}</code></pre>`);
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/(https?:\/\/[\w\-._~:?#@!$&'()*+,;=%/]+)(?![^<]*>)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    return { __html: t };
+  };
+  const authorOf = (m) => {
+    if (m.cls === "system") return "system";
+    if (m.type === "image") return "bot";
+    return m.cls && m.cls.includes("user") ? "user" : "bot";
   };
 
   // -------------------------------
@@ -160,7 +219,6 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
     try {
       // set Lex session to the selected chat
       setCurrentSessionId(targetSessionId);
-      console.log("Switched to session:", targetSessionId);
   
       // Restore from DynamoDB (optional if you want history shown)
       const data = await invokeLambda("restoreChats-prod", { sessionId: targetSessionId });
@@ -181,103 +239,134 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
   // JSX rendering
   // -------------------------------
   return (
-    <div
-      id="chat"
-      style={{
-        padding: "30px",
-        maxWidth: "750px",
-        margin: "50px auto",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        backgroundColor: "#fefefe",
-        borderRadius: "10px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-      }}
-    >
-      {/* Sidebar buttons */}
-      <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>
-        <button onClick={handleRefresh}>Refresh</button>
-        <button onClick={() => handleRestoreChat(0)}>Chat 1</button>
-        <button onClick={() => handleRestoreChat(1)}>Chat 2</button>
-        <button onClick={() => handleRestoreChat(2)}>Chat 3</button>
-      </div>
+    <div className={`chat-root ${theme}`} data-sidebar={sidebarOpen ? "open" : "closed"}>
+      <header className="chat-header" role="banner">
+        <button
+          className="icon-btn sidebar-toggle"
+          aria-label="Toggle sidebar"
+          aria-expanded={sidebarOpen}
+          onClick={() => setSidebarOpen((v) => !v)}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
+          </svg>
+        </button>
+        <div className="title-group">
+          <h1 className="app-title">ChargerGPT</h1>
+          <div className="subtitle">UAH Assistant</div>
+        </div>
+        <div className="header-actions">
+          <button
+            className="icon-btn theme-toggle"
+            aria-label="Toggle dark mode"
+            onClick={() => {
+              setTheme((t) => {
+                const seq = ["theme-auto", "theme-dark", "theme-light"]; 
+                const idx = seq.indexOf(t);
+                return seq[(idx + 1) % seq.length];
+              });
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.79zM1 13h3v-2H1zm10 10h2v-3h-2zM4.22 19.78l1.79-1.79-1.8-1.79-1.79 1.79zM20 11V9h3v2zm-1.76-6.16l-1.79 1.79 1.8 1.79 1.79-1.79zM12 6a6 6 0 100 12 6 6 0 000-12z" />
+            </svg>
+          </button>
+        </div>
+      </header>
 
-      {/* Chat messages */}
-      <div
-        id="messages"
-        style={{
-          border: "1px solid #ccc",
-          borderRadius: "10px",
-          padding: "15px",
-          height: "500px",
-          width: "700px",
-          overflowY: "auto",
-          marginBottom: "15px",
-          backgroundColor: "#fafafa",
-        }}
-      >
-        {messages.map((m, i) => {
-          if (m.type === "image") {
+      <main className="chat-main" role="main">
+        <aside className="chat-sidebar" aria-label="Recent chats">
+          <div className="sidebar-header">
+            <h2>Recent chats</h2>
+            <button className="text-btn" onClick={handleRefresh}>Refresh</button>
+          </div>
+          <nav className="sidebar-list" role="navigation">
+            <button className="sidebar-item" onClick={() => handleRestoreChat(0)}>
+              <span className="dot"></span><span className="label">Chat 1</span>
+            </button>
+            <button className="sidebar-item" onClick={() => handleRestoreChat(1)}>
+              <span className="dot"></span><span className="label">Chat 2</span>
+            </button>
+            <button className="sidebar-item" onClick={() => handleRestoreChat(2)}>
+              <span className="dot"></span><span className="label">Chat 3</span>
+            </button>
+          </nav>
+        </aside>
+
+        <section ref={messagesRef} className="chat-messages" role="log" aria-live="polite" aria-relevant="additions text">
+          {messages.map((m, i) => {
+            const author = authorOf(m);
+            const prevAuthor = i > 0 ? authorOf(messages[i - 1]) : null;
+            const grouped = prevAuthor === author && author !== "system";
+            if (m.type === "image") {
+              return (
+                <div key={i} className="message image bot">
+                  <div className={`flex items-start gap-2 ${grouped ? "mt-0" : "mt-2"}`}>
+                    {!grouped && (
+                      <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-xs font-semibold">B</div>
+                    )}
+                    <div className="bubble">
+                      <img src={m.txt} alt={(m.location ? m.location + " map" : "attachment")} />
+                      {m.location ? <div className="caption">{m.location} Map</div> : null}
+                    </div>
+                  </div>
+                  {m.ts ? <div className="timestamp">{new Date(m.ts).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div> : null}
+                </div>
+              );
+            }
+            if (m.cls === "system") {
+              return (
+                <div key={i} className="message system">
+                  <div className="bubble">{m.txt}</div>
+                  {m.ts ? <div className="timestamp text-[var(--muted)] text-xs mt-1">{new Date(m.ts).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div> : null}
+                </div>
+              );
+            }
+            const isUser = author === "user";
             return (
-              <div
-                key={i}
-                className={m.cls}
-                style={{ textAlign: "center", margin: "15px 0" }}
-              >
-                <h4 style={{ marginBottom: "8px" }}>{m.location} Map</h4>
-                <img
-                  src={m.txt}
-                  alt={`${m.location} map`}
-                  style={{
-                    width: "100%",
-                    maxWidth: "500px",
-                    borderRadius: "10px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  }}
-                />
+              <div key={i} className={`message ${isUser ? "user" : "bot"}`}>
+                <div className={`flex items-start gap-2 ${isUser ? "justify-end" : ""} ${grouped ? "mt-0" : "mt-2"}`}>
+                  {isUser ? (
+                    <>
+                      <div className="bubble">{stripPrefixes(m.txt)}</div>
+                      {!grouped && <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-xs font-semibold">U</div>}
+                    </>
+                  ) : (
+                    <>
+                      {!grouped && <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-xs font-semibold">B</div>}
+                      <div className="bubble" dangerouslySetInnerHTML={renderRichText(m.txt)} />
+                    </>
+                  )}
+                </div>
+                {m.ts ? <div className="timestamp text-[var(--muted)] text-xs mt-1">{new Date(m.ts).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div> : null}
               </div>
             );
-          }
-          return (
-            <div
-              key={i}
-              className={m.cls}
-              style={{ margin: "8px 0", whiteSpace: "pre-wrap", lineHeight: "1.4" }}
-            >
-              {m.txt}
+          })}
+
+          {isTyping && (
+            <div className="typing-indicator" aria-label="Assistant is typing" aria-live="polite">
+              <span></span><span></span><span></span>
             </div>
-          );
-        })}
+          )}
+        </section>
+      </main>
 
-        {isTyping && (
-          <div className="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        )}
-      </div>
-
-      {/* Input form */}
-      <form
-        onSubmit={handleSend}
-        style={{ display: "flex", width: "700px" }}
-      >
-        <input
+      <form className="chat-composer" onSubmit={handleSend} aria-label="Send a message">
+        <textarea
+          name="message"
+          placeholder="Message ChargerGPT…"
+          aria-label="Message input"
+          rows={1}
+          autoComplete="off"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask something..."
-          style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #ccc",
-            fontSize: "16px",
-            outline: "none",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}
+          ref={inputRef}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCurrent(); } }}
         />
+        <button type="submit" className="send-btn" aria-label="Send message" disabled={!canSend}>
+          Send
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
       </form>
     </div>
   );
