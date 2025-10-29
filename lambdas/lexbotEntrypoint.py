@@ -57,12 +57,11 @@ def lambda_handler(event, context):
                     resolved_value = response['Item'].get('savedResolvedValue')
                     session_attrs["savedResolvedValue"] = resolved_value
                 logs.extend(response['Item'].get('conversation', []))
-                session_attrs["restoredCounter"] = 1
             else:
                 print(f"No conversation found for sessionId: {sessionId}")
-
         except ClientError as e:
             print(f"Error retrieving session {sessionId}: {e.response['Error']['Message']}")
+        session_attrs["restoredCounter"] = 1
     #----------------------------------------------------------------------------------------------------
     #----------------------------------------------------------------------------------------------------
 
