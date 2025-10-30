@@ -263,7 +263,7 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
             <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
           </svg>
         </button>
-        <div className="title-group">
+       <div className="title-group">
   <button
     className="app-title-btn"
     onClick={handleResetChat}
@@ -273,6 +273,7 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
     <div className="subtitle">UAH Assistant</div>
   </button>
 </div>
+
         <div className="header-actions">
           <button
             className="icon-btn theme-toggle"
