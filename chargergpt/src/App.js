@@ -264,9 +264,15 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
           </svg>
         </button>
         <div className="title-group">
-          <h1 className="app-title">ChargerGPT</h1>
-          <div className="subtitle">UAH Assistant</div>
-        </div>
+  <button
+    className="app-title-btn"
+    onClick={handleResetChat}
+    aria-label="Start a new chat"
+  >
+    <h1 className="app-title">ChargerGPT</h1>
+    <div className="subtitle">UAH Assistant</div>
+  </button>
+</div>
         <div className="header-actions">
           <button
             className="icon-btn theme-toggle"
