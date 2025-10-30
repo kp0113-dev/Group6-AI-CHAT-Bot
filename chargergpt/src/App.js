@@ -219,6 +219,7 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
     try {
       // set Lex session to the selected chat
       setCurrentSessionId(targetSessionId);
+      console.log("Switched to session:", targetSessionId);
   
       // Restore from DynamoDB (optional if you want history shown)
       const data = await invokeLambda("restoreChats-prod", { sessionId: targetSessionId });
