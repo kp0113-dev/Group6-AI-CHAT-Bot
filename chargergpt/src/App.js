@@ -293,6 +293,7 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
           </nav>
         </aside>
 
+        <div className="chat-content">
         <section ref={messagesRef} className="chat-messages" role="log" aria-live="polite" aria-relevant="additions text">
           {messages.map((m, i) => {
             const author = authorOf(m);
@@ -349,25 +350,25 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
             </div>
           )}
         </section>
+        <form className="chat-composer" onSubmit={handleSend} aria-label="Send a message">
+          <textarea
+            name="message"
+            placeholder="Message ChargerGPT…"
+            aria-label="Message input"
+            rows={1}
+            autoComplete="off"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            ref={inputRef}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCurrent(); } }}
+          />
+          <button type="submit" className="send-btn" aria-label="Send message" disabled={!canSend}>
+            Send
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+          </button>
+        </form>
+        </div>
       </main>
-
-      <form className="chat-composer" onSubmit={handleSend} aria-label="Send a message">
-        <textarea
-          name="message"
-          placeholder="Message ChargerGPT…"
-          aria-label="Message input"
-          rows={1}
-          autoComplete="off"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          ref={inputRef}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCurrent(); } }}
-        />
-        <button type="submit" className="send-btn" aria-label="Send message" disabled={!canSend}>
-          Send
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
-        </button>
-      </form>
     </div>
   );
 }
