@@ -235,6 +235,18 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
     }
   };
 
+  // -------------------------------
+  // Reset (New Chat) handler NEW
+  // -------------------------------
+  const handleResetChat = async () => {
+    setMessages([]);
+    setMessages((prev) => [...prev, { txt: "New chat started", cls: "system", ts: Date.now() }]);  // Clear the UI
+    const newId = "user-" + Date.now();  // Unique new session
+    setCurrentSessionId(newId);
+    console.log("New session started:", newId);
+
+
+  };
 
   // -------------------------------
   // JSX rendering
@@ -253,8 +265,14 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
           </svg>
         </button>
         <div className="title-group">
+          <button
+            className="app-title-bnt"
+            onClick={handleResetChat}
+            aria-label="Start a new chat"
+          >
           <h1 className="app-title">ChargerGPT</h1>
           <div className="subtitle">UAH Assistant</div>
+          </button>
         </div>
         <div className="header-actions">
           <button
