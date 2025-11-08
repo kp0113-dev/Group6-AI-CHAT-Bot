@@ -29,7 +29,7 @@ def lambda_handler(event, context):
             data = json.loads(bedrock_response["Payload"].read())
             result = data['answer']
         else:
-            result = f"No data found for '{resolved_value}' in {intent_name.split('-')[0]} database."
+            result = f"Sorry, I don't have any information on '{resolved_value}'."
 
     except Exception as e:
         result = f"Error querying DynamoDB: {str(e)}"
