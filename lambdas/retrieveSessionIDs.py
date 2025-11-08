@@ -16,10 +16,12 @@ def lambda_handler(event, context):
         print ("we got here 1")
         items = response.get('Items', [])
         session_ids = [item['sessionId'] for item in items]
+        times = [item['endedAt']for item in items]
 
         print (session_ids)
 
-        return {"sessionIds": session_ids}
+        return {"sessionIds": session_ids,
+                "times": times}
 
     except Exception as e:
         return {"error": str(e)}
