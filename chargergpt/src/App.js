@@ -254,21 +254,29 @@ export default function App() {
     console.log("New session started:", newId);
   };
 
-  // Helper to format timestamps nicely 🆕
-  const formatTime = (t) => {
-    if (!t) return "No chat";
-    try {
-      const date = new Date(t);
-      return date.toLocaleString([], {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return t;
-    }
-  };
+  // Helper to format epoch timestamps to US Central time
+const formatTime = (epoch) => {
+  if (!epoch) return "No chat";
+  try {
+    // Ensure we’re using milliseconds
+    const ts = epoch < 1e12 ? epoch * 1000 : epoch;
+
+    const date = new Date(ts);
+
+    return date.toLocaleString("en-US", {
+      timeZone: "America/Chicago",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (e) {
+    console.error("Error formatting time:", e);
+    return "Invalid time";
+  }
+};
+
 
   // JSX
   return (
