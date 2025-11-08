@@ -9,7 +9,7 @@ export default function App() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionIDs, setSessionIDs] = useState([null, null, null]);
-  const [sessionTimes, setSessionTimes] = useState([null, null, null]); // 🆕 store times
+  const [sessionTimes, setSessionTimes] = useState([null, null, null]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [theme, setTheme] = useState("theme-auto");
   const messagesRef = useRef(null);
@@ -206,14 +206,14 @@ export default function App() {
   const handleRefresh = async () => {
     try {
       const data = await invokeLambda("retrieveSessionIDs-prod", {});
-      setSessionIDs(data.sessionIds || [null, null, null]);
-      setSessionTimes(data.times || [null, null, null]); // 🆕 store times
+      setSessionIDs(data.sessionIds || [null, null, null]); // store session IDs
+      setSessionTimes(data.times || [null, null, null]); // store times
     } catch (err) {
       console.error("Failed to retrieve session IDs:", err);
     }
   };
 
-  // 🆕 Auto-refresh on mount
+  // Auto-refresh on mount
   useEffect(() => {
     handleRefresh();
   }, []);
