@@ -9,6 +9,7 @@ export default function App() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionIDs, setSessionIDs] = useState([null, null, null]);
+  const [sessionTimes, setSessionTimes] = useState([null, null, null]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [theme, setTheme] = useState("theme-auto");
   const messagesRef = useRef(null);
@@ -20,7 +21,7 @@ export default function App() {
   const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
   const LOCALE = window._env_?.LOCALE_ID || "en_US";
 
-const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
+  const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
   const canSend = (input || "").trim().length > 0;
 
   // Configure AWS credentials on mount
@@ -205,17 +206,23 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
   const handleRefresh = async () => {
     try {
       const data = await invokeLambda("retrieveSessionIDs-prod", {});
-      setSessionIDs(data.sessionIds || [null, null, null]);
+      setSessionIDs(data.sessionIds || [null, null, null]); // store session IDs
+      setSessionTimes(data.times || [null, null, null]); // store times
     } catch (err) {
       console.error("Failed to retrieve session IDs:", err);
     }
   };
 
-  // Restore a chat by sessionID
+  // Auto-refresh on mount
+  useEffect(() => {
+    handleRefresh();
+  }, []);
+
+  // Restore chat
   const handleRestoreChat = async (index) => {
     const targetSessionId = sessionIDs[index];
     if (!targetSessionId) return;
-  
+
     try {
       // set Lex session to the selected chat
       setCurrentSessionId(targetSessionId);
@@ -235,22 +242,57 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
     }
   };
 
-  // -------------------------------
-  // Reset (New Chat) handler NEW
-  // -------------------------------
+  // Reset chat
   const handleResetChat = async () => {
     setMessages([]);
-    setMessages((prev) => [...prev, { txt: "New chat started", cls: "system", ts: Date.now() }]);  // Clear the UI
-    const newId = "user-" + Date.now();  // Unique new session
+    setMessages((prev) => [
+      ...prev,
+      { txt: "New chat started", cls: "system", ts: Date.now() },
+    ]);
+    const newId = "user-" + Date.now();
     setCurrentSessionId(newId);
     console.log("New session started:", newId);
-
-
   };
 
-  // -------------------------------
-  // JSX rendering
-  // -------------------------------
+// Helper to format ISO timestamps or epoch to US Central time
+const formatTime = (t) => {
+  if (!t) return "No chat";
+  try {
+    let date;
+
+    if (typeof t === "number") {
+      // epoch number
+      const ts = t < 1e12 ? t * 1000 : t; // seconds → ms
+      date = new Date(ts);
+    } else if (typeof t === "string") {
+      // Some DynamoDB ISO strings have no 'Z' (timezone info)
+      // Force interpret as UTC by appending 'Z' if missing
+      if (!t.endsWith("Z")) t = t + "Z";
+      date = new Date(t);
+    } else {
+      return "Invalid time";
+    }
+
+    if (isNaN(date.getTime())) return "Invalid time";
+
+    // Convert & format to US Central (America/Chicago)
+    return date.toLocaleString("en-US", {
+      timeZone: "America/Chicago",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (e) {
+    console.error("Error formatting time:", e);
+    return "Invalid time";
+  }
+};
+
+
+
+  // JSX
   return (
     <div className={`chat-root ${theme}`} data-sidebar={sidebarOpen ? "open" : "closed"}>
       <header className="chat-header" role="banner">
@@ -270,8 +312,8 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
             onClick={handleResetChat}
             aria-label="Start a new chat"
           >
-          <h1 className="app-title">ChargerGPT</h1>
-          <div className="subtitle">UAH Assistant</div>
+            <h1 className="app-title">ChargerGPT</h1>
+            <div className="subtitle">UAH Assistant</div>
           </button>
         </div>
         <div className="header-actions">
@@ -280,7 +322,7 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
             aria-label="Toggle dark mode"
             onClick={() => {
               setTheme((t) => {
-                const seq = ["theme-auto", "theme-dark", "theme-light"]; 
+                const seq = ["theme-auto", "theme-dark", "theme-light"];
                 const idx = seq.indexOf(t);
                 return seq[(idx + 1) % seq.length];
               });
@@ -297,17 +339,22 @@ const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
         <aside className="chat-sidebar" aria-label="Recent chats">
           <div className="sidebar-header">
             <h2>Recent chats</h2>
-            <button className="text-btn" onClick={handleRefresh}>Refresh</button>
+            <button className="text-btn" onClick={handleRefresh}>
+              Refresh
+            </button>
           </div>
           <nav className="sidebar-list" role="navigation">
             <button className="sidebar-item" onClick={() => handleRestoreChat(0)}>
-              <span className="dot"></span><span className="label">Chat 1</span>
+              <span className="dot"></span>
+              <span className="label">{formatTime(sessionTimes[0])}</span>
             </button>
             <button className="sidebar-item" onClick={() => handleRestoreChat(1)}>
-              <span className="dot"></span><span className="label">Chat 2</span>
+              <span className="dot"></span>
+              <span className="label">{formatTime(sessionTimes[1])}</span>
             </button>
             <button className="sidebar-item" onClick={() => handleRestoreChat(2)}>
-              <span className="dot"></span><span className="label">Chat 3</span>
+              <span className="dot"></span>
+              <span className="label">{formatTime(sessionTimes[2])}</span>
             </button>
           </nav>
         </aside>
