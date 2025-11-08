@@ -260,12 +260,14 @@ const formatTime = (t) => {
   try {
     let date;
 
-    // Handle both epoch numbers and ISO strings
     if (typeof t === "number") {
+      // epoch number
       const ts = t < 1e12 ? t * 1000 : t; // seconds → ms
       date = new Date(ts);
     } else if (typeof t === "string") {
-      // Ensure correct parsing of ISO timestamp
+      // Some DynamoDB ISO strings have no 'Z' (timezone info)
+      // Force interpret as UTC by appending 'Z' if missing
+      if (!t.endsWith("Z")) t = t + "Z";
       date = new Date(t);
     } else {
       return "Invalid time";
@@ -287,6 +289,7 @@ const formatTime = (t) => {
     return "Invalid time";
   }
 };
+
 
 
   // JSX
