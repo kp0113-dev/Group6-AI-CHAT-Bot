@@ -254,15 +254,26 @@ export default function App() {
     console.log("New session started:", newId);
   };
 
-  // Helper to format epoch timestamps to US Central time
-const formatTime = (epoch) => {
-  if (!epoch) return "No chat";
+// Helper to format ISO timestamps or epoch to US Central time
+const formatTime = (t) => {
+  if (!t) return "No chat";
   try {
-    // Ensure we’re using milliseconds
-    const ts = epoch < 1e12 ? epoch * 1000 : epoch;
+    let date;
 
-    const date = new Date(ts);
+    // Handle both epoch numbers and ISO strings
+    if (typeof t === "number") {
+      const ts = t < 1e12 ? t * 1000 : t; // seconds → ms
+      date = new Date(ts);
+    } else if (typeof t === "string") {
+      // Ensure correct parsing of ISO timestamp
+      date = new Date(t);
+    } else {
+      return "Invalid time";
+    }
 
+    if (isNaN(date.getTime())) return "Invalid time";
+
+    // Convert & format to US Central (America/Chicago)
     return date.toLocaleString("en-US", {
       timeZone: "America/Chicago",
       month: "short",
