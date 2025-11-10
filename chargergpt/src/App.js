@@ -24,12 +24,18 @@ export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
   const canSend = (input || "").trim().length > 0;
 
-  // Configure AWS credentials on mount
+  // Configure and pre-warm AWS credentials on mount
   useEffect(() => {
     if (!AWS) return;
     AWS.config.region = REGION;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
       IdentityPoolId: IDPOOL,
+    });
+
+    // Force credential retrieval immediately
+    AWS.config.credentials.get((err) => {
+      if (err) console.error("Failed to init credentials", err);
+      else console.log("Credentials ready");
     });
   }, [REGION, IDPOOL]);
 
