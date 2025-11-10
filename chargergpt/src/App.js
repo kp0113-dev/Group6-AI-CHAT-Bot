@@ -24,18 +24,12 @@ export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
   const canSend = (input || "").trim().length > 0;
 
-  // Configure and pre-warm AWS credentials on mount
+  // Configure AWS credentials on mount
   useEffect(() => {
     if (!AWS) return;
     AWS.config.region = REGION;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
       IdentityPoolId: IDPOOL,
-    });
-
-    // Force credential retrieval immediately
-    AWS.config.credentials.get((err) => {
-      if (err) console.error("Failed to init credentials", err);
-      else console.log("Credentials ready");
     });
   }, [REGION, IDPOOL]);
 
@@ -105,13 +99,11 @@ export default function App() {
     appendMessage("You: " + text, "user");
     setIsTyping(true);
 
-    (async () => {
-    try {
-      // ✅ Ensure credentials are always fully resolved before Lex call
-      if (!AWS.config.credentials.needsRefresh()) {
-        await new Promise((resolve, reject) =>
-          AWS.config.credentials.get((err) => (err ? reject(err) : resolve()))
-        );
+    AWS.config.credentials.get(async (err) => {
+      if (err) {
+        appendTypingMessage("Error: " + err.message, "bot");
+        setIsTyping(false);
+        return;
       }
 
       const lexruntime = new AWS.LexRuntimeV2();
@@ -151,19 +143,14 @@ export default function App() {
               }
             } catch (err) {
               console.error("Error fetching map:", err);
+            } finally {
+              setIsTyping(false);
             }
           }
         }
-
-        setIsTyping(false);
       });
-    } catch (err) {
-      console.error("Credential error:", err);
-      appendTypingMessage("Error: " + err.message, "bot");
-      setIsTyping(false);
-    }
-  })();
-
+    });
+  };
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -450,5 +437,4 @@ const formatTime = (t) => {
       </main>
     </div>
   );
-}
 }
