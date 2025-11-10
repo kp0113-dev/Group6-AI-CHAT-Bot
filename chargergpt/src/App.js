@@ -99,11 +99,12 @@ export default function App() {
     appendMessage("You: " + text, "user");
     setIsTyping(true);
 
-    AWS.config.credentials.get(async (err) => {
-      if (err) {
-        appendTypingMessage("Error: " + err.message, "bot");
-        setIsTyping(false);
-        return;
+    (async () => {
+      // ensure credentials are always fully resolved before Lex call
+      if (!AWS.config.credentials.needsRefresh()) {
+        await new Promise((resolve, reject) =>
+          AWS.config.credentials.get((err) => (err ? reject(err) : resolve()))
+        );
       }
 
       const lexruntime = new AWS.LexRuntimeV2();
