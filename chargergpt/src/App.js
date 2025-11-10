@@ -219,23 +219,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-  const warmup = async () => {
-    try {
-      const lexruntime = new AWS.LexRuntimeV2();
-      await lexruntime.recognizeText({
-        botId: BOT_ID,
-        botAliasId: BOT_ALIAS,
-        localeId: LOCALE,
-        sessionId: "warmup-" + Date.now(),
-        text: "hi",
-      }).promise();
-      console.log("Lex warmed up");
-    } catch (e) {
-      console.warn("Warmup skipped:", e.message);
-    }
-  };
-  warmup();
-}, []);
+    const warmup = async () => {
+      try {
+        const lexruntime = new AWS.LexRuntimeV2();
+        await lexruntime.recognizeText({
+          botId: BOT_ID,
+          botAliasId: BOT_ALIAS,
+          localeId: LOCALE,
+          sessionId: "warmup-" + Date.now(),
+          text: "hi",
+        }).promise();
+        console.log("Lex warmed up");
+      } catch (e) {
+        console.warn("Warmup skipped:", e.message);
+      }
+    };
+    warmup();
+  }, []);
 
   // Restore chat
   const handleRestoreChat = async (index) => {
