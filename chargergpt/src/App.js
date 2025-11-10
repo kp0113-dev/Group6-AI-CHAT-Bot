@@ -99,64 +99,57 @@ export default function App() {
     appendMessage("You: " + text, "user");
     setIsTyping(true);
 
-    (async () => {
-      try {
-        // ✅ Ensure credentials are always fully resolved before Lex call
-        if (!AWS.config.credentials.needsRefresh()) {
-          await new Promise((resolve, reject) =>
-            AWS.config.credentials.get((err) => (err ? reject(err) : resolve()))
-          );
-        }
-
-        const lexruntime = new AWS.LexRuntimeV2();
-        const params = {
-          botId: BOT_ID,
-          botAliasId: BOT_ALIAS,
-          localeId: LOCALE,
-          sessionId: currentSessionId,
-          text,
-        };
-
-        lexruntime.recognizeText(params, async (err, data) => {
-          if (err) {
-            console.error(err);
-            appendTypingMessage("Error: " + err.message, "bot");
-          } else {
-            if (data.messages && data.messages.length) {
-              const botReply = data.messages.map((m) => m.content).join(" ");
-              appendTypingMessage("Bot: " + botReply, "bot");
-            }
-
-            const location = data.sessionState?.sessionAttributes?.location;
-            if (location) {
-              try {
-                const url = await getMapImageUrl(location);
-                if (url) {
-                  setMessages((prev) => [
-                    ...prev,
-                    {
-                      txt: url,
-                      cls: "bot-map",
-                      type: "image",
-                      location,
-                      ts: Date.now(),
-                    },
-                  ]);
-                }
-              } catch (err) {
-                console.error("Error fetching map:", err);
-              }
-            }
-          }
-
-          setIsTyping(false);
-        });
-      } catch (err) {
-        console.error("Credential error:", err);
+    AWS.config.credentials.get(async (err) => {
+      if (err) {
         appendTypingMessage("Error: " + err.message, "bot");
         setIsTyping(false);
+        return;
       }
-    })();
+
+      const lexruntime = new AWS.LexRuntimeV2();
+      const params = {
+        botId: BOT_ID,
+        botAliasId: BOT_ALIAS,
+        localeId: LOCALE,
+        sessionId: currentSessionId,
+        text,
+      };
+
+      lexruntime.recognizeText(params, async (err, data) => {
+        if (err) {
+          console.error(err);
+          appendTypingMessage("Error: " + err.message, "bot");
+        } else {
+          if (data.messages && data.messages.length) {
+            const botReply = data.messages.map((m) => m.content).join(" ");
+            appendTypingMessage("Bot: " + botReply, "bot");
+          }
+
+          const location = data.sessionState?.sessionAttributes?.location;
+          if (location) {
+            try {
+              const url = await getMapImageUrl(location);
+              if (url) {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    txt: url,
+                    cls: "bot-map",
+                    type: "image",
+                    location,
+                    ts: Date.now(),
+                  },
+                ]);
+              }
+            } catch (err) {
+              console.error("Error fetching map:", err);
+            } finally {
+              setIsTyping(false);
+            }
+          }
+        }
+      });
+    });
   };
 
   const handleSend = (e) => {
