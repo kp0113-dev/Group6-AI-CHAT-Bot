@@ -100,7 +100,7 @@ export default function App() {
     setIsTyping(true);
 
     (async () => {
-      // ensure credentials are always fully resolved before Lex call
+      //ensure credentials are always fully resolved before Lex call
       if (!AWS.config.credentials.needsRefresh()) {
         await new Promise((resolve, reject) =>
           AWS.config.credentials.get((err) => (err ? reject(err) : resolve()))
