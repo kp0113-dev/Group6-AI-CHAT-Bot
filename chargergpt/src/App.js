@@ -21,6 +21,14 @@ export default function App() {
   const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
   const LOCALE = window._env_?.LOCALE_ID || "en_US";
 
+  // Quick links shown as buttons at bottom of the sidebar.
+  // Update these URLs/labels as you need.
+  const QUICK_LINKS = [
+    { id: 1, label: "Canvas", url: "https://uah.instructure.com/" },
+    { id: 2, label: "MyUAH", url: "https://experience.elluciancloud.com/uoaih/" },
+    { id: 3, label: "UAH.edu", url: "https://www.uah.edu/" },
+  ];
+
   const [currentSessionId, setCurrentSessionId] = useState("user-" + Date.now());
   const canSend = (input || "").trim().length > 0;
 
@@ -358,31 +366,21 @@ const formatTime = (t) => {
               <span className="label">{formatTime(sessionTimes[2])}</span>
             </button>
           </nav>
-          <links className="quick-links" role="navigation">
-            <p className="quick-links-label">Quick Links</p>
-            
-            <button
-              className="sidebar-link"
-              onClick={() => window.location.href = "https://uah.instructure.com/"}
-            >
-              <p className="links">Canvas</p>
-            </button>
-
-            <button
-              className="sidebar-link"
-              onClick={() => window.location.href = "https://experience.elluciancloud.com/uoaih/"}
-            >
-              <p className="links">MyUAH</p>
-            </button>
-
-            <button
-              className="sidebar-link"
-              onClick={() => window.location.href = "https://www.uah.edu/"}
-            >
-              <p className="links">UAH.edu</p>
-            </button>
-          </links>
-
+          {/* Bottom quick-links/buttons. These open in a new window. */}
+          <div className="sidebar-bottom" aria-label="Quick links">
+            <h2 className="quick-links-label">Quick Links</h2>
+            {QUICK_LINKS.map((l) => (
+              <a
+                key={l.id}
+                className="sidebar-link"
+                href={l.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <p className="links">{l.label}</p>
+              </a>
+            ))}
+          </div>
         </aside>
 
         <div className="chat-content">
