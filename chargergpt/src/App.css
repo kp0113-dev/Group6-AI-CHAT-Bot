@@ -17,14 +17,14 @@
 .sidebar-header{ display:flex; align-items:center; justify-content:space-between; }
 .sidebar-header h2{ font-size:14px; margin:0; }
 .sidebar-list{ display:grid; gap:6px; }
-.quick-links{ display:grid; margin: 50px; gap:20px; position: relative; top: 400px; }
+.quick-links{ display:grid; margin: 50px; gap:20px; position: relative; top: 320px; }
 .sidebar-item{ width:100%; text-align:left; padding:10px 12px; border-radius:var(--radius); background:var(--surface-2); border:1px solid var(--border); color:var(--text); display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:center; cursor:pointer; }
 .sidebar-item .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
 .sidebar-item:hover{ filter:brightness(0.98); }
 .sidebar-link{ width:100%; text-align:center; padding:10px 12px; border-radius:var(--radius); background:var(--surface-2); border:1px solid var(--border); color:var(--text); display:grid; gap:8px; align-items:center; cursor:pointer; }
 .sidebar-link .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
 .sidebar-link:hover{ filter:brightness(0.98); }
-.quick-links-label {font-size: 14px; font-weight: 400; margin-bottom: 12px; color: var(--text); text-align: left; margin: -50px; position: relative; top: 20px; color: rgb(0, 140, 255); border-top: 1px solid var(--border); padding-top: 10px;}
+.quick-links-label {font-size: 14px; font-weight: 400; margin-bottom: 12px; color: var(--text); text-align: left; margin-left: -50px; position: relative; top: 20px; color: rgb(0, 140, 255); border-top: 1px solid var(--border); padding-top: 10px;}
 .chat-messages > .message{ grid-column:2; }
 .chat-messages > .typing-indicator{ grid-column:2; }
 .chat-composer{ position:static; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-2); display:grid; grid-template-columns:1fr auto; gap:8px; padding:10px; width:min(100% - 32px, 800px); margin:8px auto 16px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); background: var(--surface); background: color-mix(in oklab, var(--surface) 80%, transparent); }
