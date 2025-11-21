@@ -359,8 +359,8 @@ const formatTime = (t) => {
             </button>
           </nav>
           <links className="quick-links" role="navigation">
-            <h className="quick-links-label">Quick Links</h>
-
+            <p className="quick-links-label">Quick Links</p>
+            
             <button
               className="sidebar-link"
               onClick={() => window.location.href = "https://uah.instructure.com/"}
