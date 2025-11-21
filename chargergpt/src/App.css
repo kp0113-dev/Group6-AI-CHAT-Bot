@@ -17,7 +17,7 @@
 .sidebar-header{ display:flex; align-items:center; justify-content:space-between; }
 .sidebar-header h2{ font-size:14px; margin:0; }
 .sidebar-list{ display:grid; gap:6px; }
-.quick-links{ display:grid; margin: 50px; gap:20px; position: relative; top: 410px; }
+.quick-links{ display:grid; margin: 50px; gap:20px; position: relative; top: 400px; }
 .sidebar-item{ width:100%; text-align:left; padding:10px 12px; border-radius:var(--radius); background:var(--surface-2); border:1px solid var(--border); color:var(--text); display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:center; cursor:pointer; }
 .sidebar-item .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
 .sidebar-item:hover{ filter:brightness(0.98); }
