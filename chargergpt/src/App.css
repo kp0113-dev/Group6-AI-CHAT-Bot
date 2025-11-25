@@ -18,14 +18,14 @@
 .sidebar-header h2{ font-size:14px; margin:0; }
 .quick-links-label{ font-size:14px; margin:0 0 14px; color:#008CFF; font-weight:500; align-self:flex-start; }
 .sidebar-list{ display:grid; gap:6px; }
-.sidebar-item{ width:100%; text-align:left; padding:10px 12px; border-radius:var(--radius); background:var(--surface-2); border:1px solid var(--border); color:var(--text); display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:center; cursor:pointer; }
+.sidebar-item{ width:100%; text-align:left; padding:10px 12px; border-radius:var(--radius); background:var(--surface-2); border:1.25px solid color-mix(in oklab, var(--border) 70%, black 8%); color:var(--text); display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:center; cursor:pointer; }
 .sidebar-item .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
 .sidebar-item:hover{ filter:brightness(0.98); }
 .sidebar-link{ height: 150%;width: 80%; margin:0 auto; text-align:center; padding:8px 10px; border-radius:calc(var(--radius) - 4px); background:var(--surface-2); border:1px solid var(--border); color:var(--text); display:flex; justify-content:center; align-items:center; gap:8px; cursor:pointer; font-size:14px; }
 .sidebar-link .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); }
 .sidebar-link .links{ color:#008CFF; margin:0; font-weight:500; }
 .sidebar-link:hover{ filter:brightness(0.98); }
-.sidebar-bottom{ margin-top:auto; margin-bottom:32px; display:flex; flex-direction:column; gap:10px; padding-top:12px; border-top:1px solid var(--border); }
+.sidebar-bottom{ margin-top:auto; margin-bottom:32px; display:flex; flex-direction:column; gap:10px; padding-top:12px; border-top:1.25px solid color-mix(in oklab, var(--border) 70%, black 8%); }
 .chat-messages{ position:relative; background:linear-gradient(0deg,var(--bg),var(--bg)); padding:16px 16px; overflow:auto; display:grid; gap:8px; align-content:start; grid-template-columns: 1fr min(100% - 32px, 800px) 1fr; justify-items:center; min-height:0; z-index:1; }
 .chat-messages > .message{ grid-column:2; }
 .chat-messages > .typing-indicator{ grid-column:2; }
@@ -72,3 +72,26 @@
 .chat-messages code{ font-family:var(--font-mono); background:var(--surface-2); padding:2px 4px; border-radius:6px; }
 .chat-messages pre{ margin:6px 0; background:var(--surface-2); padding:10px; border-radius:10px; overflow:auto; border:1px solid var(--border); }
 .chat-messages pre code{ background:transparent; padding:0; border-radius:0; display:block; white-space:pre; }
+
+/* Landing page styles (match main app typography & style) */
+.landing-root{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100dvh; background:#f7f7f9; color:#111827; padding:24px; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif; }
+.landing-card{ width:100%; max-width:720px; background:#ffffff; border:1.5px solid rgba(229,231,235,0.95); border-radius:14px; padding:36px 28px; box-shadow:0 6px 18px rgba(0,0,0,0.08); text-align:center; }
+.landing-title{ margin:0 0 8px; font-size:28px; letter-spacing:0.2px; color:#111827; font-weight:700; }
+.landing-sub{ margin:0 0 20px; color:#6b7280; }
+.login-btn{ appearance:none; background:#2b7fff; color:#ffffff; border:none; border-radius:14px; padding:10px 20px; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.06),0 2px 6px rgba(0,0,0,0.06); }
+.register-btn{ appearance:none; background:#2b7fff; color:#ffffff; border:none; border-radius:14px; padding:10px 20px; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.06),0 2px 6px rgba(0,0,0,0.06); }
+.guest-btn{ appearance:none; background:#828ea0; color:#ffffff; border:none; border-radius:14px; padding:10px 20px; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.06),0 2px 6px rgba(0,0,0,0.06); }
+.login-btn:hover{ filter:brightness(0.98); }
+.landing-footer{ margin-top:18px; color:#9ca3af; font-size:13px; }
+.button-row { display: flex; justify-content: center; gap: 12px; margin-top: 15px; }
+.button-row button { flex: 1; padding: 10px 20px; font-size: 16px; border-radius: 14px; border: none; cursor: pointer;}
+
+/* Login form inside landing card */
+.login-form{ display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+.login-label{ font-size:13px; text-align:left; color:var(--muted); }
+.login-input{ font-size:15px; padding:10px 12px; border-radius:8px; border:1px solid #c7ccd1; background:var(--surface-2); color:var(--text); width:100%; box-sizing:border-box; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03); }
+.login-input::placeholder{ color:grey; }
+.login-input:focus{ outline:2px solid color-mix(in oklab, var(--accent) 60%, transparent); }
+
+/* Box around the username/password fields */
+.login-fields{ display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:10px; background:color-mix(in oklab, var(--surface) 96%, var(--surface-2) 4%); }
