@@ -13,6 +13,9 @@ function Landing({ onEnter }) {
 
   return (
     <div className="landing-root">
+      <div className="logo-container">
+        <img src="/UAH_LOGO.png" alt="Logo" />
+      </div>
       <div className="landing-card">
         <h1 className="landing-title">Welcome to ChargerGPT</h1>
         <p className="landing-sub">Sign in to access campus help and directions</p>
