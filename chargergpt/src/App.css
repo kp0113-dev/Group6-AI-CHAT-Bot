@@ -29,6 +29,11 @@
 .chat-messages{ position:relative; background:linear-gradient(0deg,var(--bg),var(--bg)); padding:16px 16px; overflow:auto; display:grid; gap:8px; align-content:start; grid-template-columns: 1fr min(100% - 32px, 800px) 1fr; justify-items:center; min-height:0; z-index:1; }
 .chat-messages > .message{ grid-column:2; }
 .chat-messages > .typing-indicator{ grid-column:2; }
+
+.chat-watermark{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:0; }
+.chat-watermark img{ max-width:60%; max-height:60%; opacity:0.1; }
+
+.chat-messages > .message, .chat-messages > .typing-indicator{ position:relative; z-index:1; }
 .chat-composer{ position:static; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-2); display:grid; grid-template-columns:1fr auto; gap:8px; padding:10px; width:min(100% - 32px, 800px); margin:8px auto 16px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); background: var(--surface); background: color-mix(in oklab, var(--surface) 80%, transparent); }
 .chat-composer input[type="text"],
 .chat-composer textarea{ width:100%; font-size:var(--text-size); padding:12px 14px; border-radius:var(--radius); border:1px solid var(--border); background:var(--surface-2); color:var(--text); resize:none; }
