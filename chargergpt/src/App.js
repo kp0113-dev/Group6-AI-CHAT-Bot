@@ -385,6 +385,11 @@ const formatTime = (t) => {
 
         <div className="chat-content">
         <section ref={messagesRef} className="chat-messages" role="log" aria-live="polite" aria-relevant="additions text">
+          {/* Watermark/logo in the center of the messages area (low opacity). 
+              Place your logo file at `public/uah-logo.png` or change the src below. */}
+          <div className="chat-watermark" aria-hidden="true">
+            <img src="/UAH_LOGO.png" alt="UAH logo" />
+          </div>
           {messages.map((m, i) => {
             const author = authorOf(m);
             const prevAuthor = i > 0 ? authorOf(messages[i - 1]) : null;
