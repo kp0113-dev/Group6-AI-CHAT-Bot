@@ -102,3 +102,20 @@
 .login-fields{ display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:10px; background:color-mix(in oklab, var(--surface) 96%, var(--surface-2) 4%); }
 .logo-container { text-align: center; margin-top: -50px; margin-bottom: 20px; }
 .logo-container img { width: 600px; height: auto; opacity: 0.95;}
+
+/* Landing actions (top-right controls inside landing card) */
+.landing-actions{ display:flex; justify-content:flex-end; margin-bottom:8px; }
+
+/* Landing-specific theme variants. These mirror the main app's theme variables
+  so the landing page can enter dark / auto / light modes independently. */
+@media (prefers-color-scheme: dark){}
+.landing-root.theme-dark{ --bg:#0f1115; --surface:#141821; --surface-2:#0e121a; --border:#2a2f3a; --text:#e5e7eb; --muted:#a3a8b4; --muted-2:#7b8190; --accent:#2b7fff; --accent-contrast:#0b1020; --bot-bubble:#1a2030; --user-bubble:#7aa2ff; --user-text:#0b1020; --system-bubble:#101827; --shadow-1:0 1px 2px rgba(0,0,0,0.35),0 2px 6px rgba(0,0,0,0.25); --shadow-2:0 6px 18px rgba(0,0,0,0.25); }
+.landing-root.theme-light{ --bg:#f7f7f9; --surface:#ffffff; --surface-2:#f1f2f5; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --muted-2:#9ca3af; --accent:#2b7fff; --accent-contrast:#ffffff; --bot-bubble:#ffffff; --user-bubble:#2b7fff; --user-text:#ffffff; --system-bubble:#eef2ff; --shadow-1:0 1px 2px rgba(0,0,0,0.06),0 2px 6px rgba(0,0,0,0.06); --shadow-2:0 6px 18px rgba(0,0,0,0.08); }
+
+/* Apply variables to landing elements */
+.landing-root.theme-dark, .landing-root.theme-light{ background:var(--bg); color:var(--text); }
+.landing-root.theme-dark .landing-card, .landing-root.theme-light .landing-card{ background:var(--surface); border-color:var(--border); box-shadow:var(--shadow-2); }
+.landing-root.theme-dark .login-input, .landing-root.theme-light .login-input{ background:var(--surface-2); color:var(--text); border-color:var(--border); }
+.landing-root.theme-dark .login-btn, .landing-root.theme-light .login-btn{ background:var(--accent); color:var(--accent-contrast); }
+.landing-root.theme-dark .register-btn, .landing-root.theme-light .register-btn{ background:var(--accent); color:var(--accent-contrast); }
+.landing-root.theme-dark .landing-title, .landing-root.theme-light .landing-title{ color:var(--text); }
