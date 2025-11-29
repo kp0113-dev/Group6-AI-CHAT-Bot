@@ -175,7 +175,9 @@ function Registration({ onBack }) {
             </svg>
           </button>
         </div>
-        {formError ? <div className="form-error" role="alert">Please fill out the entire form</div> : null}
+        {formError ? (
+          <div className="form-error" role="alert">{formError}</div>
+        ) : null}
         <h1 className="landing-title">Create an Account</h1>
         <p className="landing-sub">Fill out the information below to create your account</p>
 
