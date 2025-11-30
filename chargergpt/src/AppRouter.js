@@ -6,6 +6,31 @@ function Landing({ onEnter }) {
   const [password, setPassword] = useState("");
   const [theme, setTheme] = useState("theme-auto");
 
+  const REGION = window._env_?.REGION;
+  const IDPOOL = window._env_?.IDENTITY_POOL_ID;
+  const BOT_ID = window._env_?.BOT_ID;
+  const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
+  const LOCALE = window._env_?.LOCALE_ID || "en_US";
+
+  useEffect(() => {
+  if (!window.AWS) return;
+
+  if (!REGION || !IDPOOL) {
+    console.error("Missing REGION or IDPOOL in window._env_");
+    return;
+  }
+
+  window.AWS.config.region = REGION;
+  window.AWS.config.credentials = new window.AWS.CognitoIdentityCredentials({
+    IdentityPoolId: IDPOOL,
+  });
+
+  window.AWS.config.credentials.get((err) => {
+    if (err) console.error("Credential error:", err);
+  });
+}, []);
+
+
   useEffect(() => {
     try {
       const t = localStorage.getItem("chat-theme");
@@ -94,6 +119,30 @@ function Registration({ onBack }) {
   const [notif, setNotif] = useState("");
   const [formError, setFormError] = useState("");
   const [bannerVisible, setBannerVisible] = useState(false);
+
+  const REGION = window._env_?.REGION;
+  const IDPOOL = window._env_?.IDENTITY_POOL_ID;
+  const BOT_ID = window._env_?.BOT_ID;
+  const BOT_ALIAS = window._env_?.BOT_ALIAS_ID;
+  const LOCALE = window._env_?.LOCALE_ID || "en_US";
+
+  useEffect(() => {
+  if (!window.AWS) return;
+
+  if (!REGION || !IDPOOL) {
+    console.error("Missing REGION or IDPOOL in window._env_");
+    return;
+  }
+
+  window.AWS.config.region = REGION;
+  window.AWS.config.credentials = new window.AWS.CognitoIdentityCredentials({
+    IdentityPoolId: IDPOOL,
+  });
+
+  window.AWS.config.credentials.get((err) => {
+    if (err) console.error("Credential error:", err);
+  });
+}, []);
 
   // Lambda invocation helper
   const invokeLambda = (functionName, payload) =>
