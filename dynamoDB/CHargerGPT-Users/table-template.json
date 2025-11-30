@@ -1,0 +1,10 @@
+{
+  "TableName": "ChargerGPT-Users",
+  "AttributeDefinitions": [
+    {"AttributeName": "username", "AttributeType": "S"}
+  ],
+  "KeySchema": [
+    {"AttributeName": "username", "KeyType": "HASH"}
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}
