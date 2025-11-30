@@ -190,7 +190,7 @@ function Registration({ onBack }) {
     setFormError("");
     const fullname = `${first.trim()} ${last.trim()}`;
     try {
-      await invokeLambda('saveUserToDynamo', { username, password, fullname });
+      await invokeLambda('saveUserToDynamo-prod', { username, password, fullname });
       setNotif("Account created Successfully");
       setBannerVisible(true);
       setTimeout(() => {
