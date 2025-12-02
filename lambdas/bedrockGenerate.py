@@ -49,10 +49,12 @@ def lambda_handler(event, context):
     else:
         context_text = f"{db_result.get('status')} - {db_result.get('message', '')}"
 
+    # User-side content: reinforce “only use DB info” and “no extra stuff”
     user_content = (
         f'The user asked: "{question}"\n'
-        f"Context:\n{context_text}\n\n"
-        "Answer the user using only the database info."
+        f"Here is the database information you may use:\n{context_text}\n\n"
+        "Using only this information, answer the user's question. "
+        "Answer the entire question, but do not add details the user did not ask for."
     )
 
     body = {
@@ -60,19 +62,48 @@ def lambda_handler(event, context):
             {
                 "role": "system",
                 "content": (
-                    "You are a helpful campus assistant. "
-                    "Always answer in a full sentence. "
-                    "If the user asks 'where', respond with: "
-                    "'The [locationName] is located at [address] in the [name].' "
-                    "If they ask about hours, respond with: "
-                    "'The [locationName]'s hours are [hours].' "
-                    "Be concise and factual."
+                    "You are a helpful campus assistant that answers questions about campus locations and related info. "
+                    "You must use ONLY the information provided in the database context. "
+                    "If the context does not contain the answer, clearly say that you do not have that information.\n\n"
+
+                    "GENERAL RULES:\n"
+                    "- Always answer in complete sentences.\n"
+                    "- Sound natural and human, not like a JSON dump.\n"
+                    "- Fully answer everything the user actually asked.\n"
+                    "- Do not add extra information beyond what is needed to answer the question.\n"
+                    "- Never invent details or guess beyond the database context.\n"
+                    "- Never mention the database or the context explicitly.\n\n"
+
+                    "HOW TO USE THE CONTEXT:\n"
+                    "- Treat the database fields (such as name, locationName, address, building, hours, "
+                    "description, services, phone, email, website, notes, etc.) as facts you can turn into natural sentences.\n"
+                    "- Only mention fields that are relevant to the user’s question.\n"
+                    "- If a relevant field is missing or empty, say that you don't have that information.\n\n"
+
+                    "INTENT-SPECIFIC GUIDELINES (USE WHEN APPLICABLE):\n"
+                    "- LOCATION / WHERE questions:\n"
+                    "  Use a sentence like: 'The [locationName] is located at [address] in the [building].'\n"
+                    "- HOURS / WHEN questions:\n"
+                    "  Use a sentence like: 'The [locationName]'s hours are [hours].'\n"
+                    "- WHAT / SERVICES questions (for example, 'What is this place?' or 'What do they do there?'):\n"
+                    "  Use a sentence like: 'The [locationName] is [description] and provides [services].'\n"
+                    "- CONTACT questions (for example, phone or email):\n"
+                    "  Use a sentence like: 'You can contact the [locationName] at [phone] or [email].'\n"
+                    "- WEBSITE / MORE INFO questions:\n"
+                    "  Use a sentence like: 'For more information about the [locationName], visit [website].'\n"
+                    "- MULTI-PART questions (for example, 'Where is it and what are the hours?'):\n"
+                    "  Answer all parts in 1–4 concise sentences, without repeating the same detail multiple times.\n\n"
+
+                    "IF INFORMATION IS MISSING:\n"
+                    "- If the database does not have the answer to the user’s question, say something like: "
+                    "'I’m sorry, but I don’t have that information for [locationName].'\n"
+                    "- Do not make anything up.\n"
                 ),
             },
             {"role": "user", "content": user_content},
         ],
         "max_tokens": 150,
-        "temperature": 0.0,
+        "temperature": 0.2,  # Slightly higher for more human-like but still controlled answers
     }
 
     try:
@@ -93,3 +124,4 @@ def lambda_handler(event, context):
         answer = f"Error with Bedrock: {str(e)}"
 
     return {"answer": answer}
+
